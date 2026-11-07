@@ -81,6 +81,29 @@ export interface Prefs {
   viewTransparency: boolean;
 }
 
+/** Public chat message in an event's lounge (visible to everyone who joined the event). */
+export interface LoungeMessage {
+  id: string;
+  eventId: string;
+  userId: string;
+  body: string;
+  createdAt: string;
+  reports: string[]; // user ids; auto-hidden at 3
+}
+
+/** Photo shared by an attendee to an event's album. Stored on disk, served via /api/photos/[id]. */
+export interface EventPhoto {
+  id: string;
+  eventId: string;
+  userId: string;
+  file: string; // filename inside the photos directory
+  mime: string;
+  caption: string;
+  likes: string[];
+  reports: string[];
+  createdAt: string;
+}
+
 export interface ProfileView {
   viewerId: string;
   targetId: string;
@@ -299,6 +322,8 @@ export interface Database {
   accounts: Account[];
   posts: Post[];
   views: ProfileView[];
+  lounge: LoungeMessage[];
+  photos: EventPhoto[];
 }
 
 // ---------- Engine I/O ----------

@@ -64,6 +64,8 @@ function reseedKeepingRealUsers(old: Partial<Database> | null): Database {
   fresh.missions.push(...(old.missions ?? []).filter((m) => realIds.has(m.userId)));
   fresh.accounts.push(...(old.accounts ?? []).filter((a) => realIds.has(a.userId)));
   fresh.posts.push(...(old.posts ?? []).filter((p) => realIds.has(p.authorId)));
+  fresh.lounge.push(...(old.lounge ?? []).filter((m) => realIds.has(m.userId)));
+  fresh.photos.push(...(old.photos ?? []).filter((p) => realIds.has(p.userId)));
   return fresh;
 }
 
@@ -72,6 +74,13 @@ export function resetDemo(): Database {
   g.__connectedDb = fresh;
   save(fresh);
   return fresh;
+}
+
+/** Where uploaded event photos live (next to the JSON store). */
+export function photosDir(): string {
+  const dir = path.join(DATA_DIR, "photos");
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
 }
 
 export function newId(prefix: string): string {

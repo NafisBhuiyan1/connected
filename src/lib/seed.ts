@@ -23,31 +23,80 @@ import { tagText } from "./ontology";
 import type { Account, Post } from "./types";
 
 export { CROWNHACKS_ID };
-export const DB_VERSION = 6;
+export const DB_VERSION = 7;
 
-// More clearly-labeled sample events around Charlotte, so the map and events tab feel alive.
-// [id, title, kind, dayOffset, startHourET, hours, lat, lng, venue, area, tags, description]
-type ExtraEvent = [string, string, ConnectedEvent["kind"], number, number, number, number, number, string, string, string[], string];
+// Precise venue coordinates (OpenStreetMap / Nominatim lookups, Nov 2026). EPIC and PORTAL are approximate.
+const V = {
+  mceniry: [35.307103, -80.730068, "McEniry Hall, UNC Charlotte"],
+  union: [35.308613, -80.733727, "Popp Martin Student Union, UNC Charlotte"],
+  woodward: [35.307243, -80.735731, "Woodward Hall, UNC Charlotte"],
+  atkins: [35.305771, -80.73211, "Atkins Library, UNC Charlotte"],
+  storrs: [35.304655, -80.729198, "Storrs Hall, UNC Charlotte"],
+  cone: [35.305299, -80.733169, "Cone University Center, UNC Charlotte"],
+  duke: [35.311954, -80.741103, "Duke Centennial Hall, UNC Charlotte"],
+  epic: [35.3092, -80.7413, "EPIC Building, UNC Charlotte"],
+  portal: [35.3113, -80.7436, "PORTAL, UNC Charlotte"],
+  campnorthend: [35.246779, -80.833207, "Camp North End"],
+  optimist: [35.234334, -80.827283, "Optimist Hall"],
+  jcsu: [35.243795, -80.855432, "Johnson C. Smith University"],
+  queens: [35.18882, -80.833332, "Queens University of Charlotte"],
+  davidson: [35.503219, -80.83393, "Davidson College"],
+  southpark: [35.152466, -80.831866, "SouthPark"],
+  ballantyne: [35.072444, -80.842884, "Ballantyne"],
+  noda: [35.251496, -80.812265, "NoDa Brewing Company"],
+  athertonmill: [35.209299, -80.860681, "Atherton Mill, South End"],
+  bearden: [35.226837, -80.847618, "Romare Bearden Park"],
+  plaza: [35.220271, -80.810849, "Plaza Midwood"],
+  cpcc: [35.130417, -80.897605, "CPCC Harper Campus"],
+  convention: [35.222096, -80.845261, "Charlotte Convention Center"],
+  packard: [35.226846, -80.846221, "Packard Place"],
+  imaginon: [35.22694, -80.837675, "ImaginOn"],
+  discovery: [35.229618, -80.841197, "Discovery Place Science"],
+} as const;
+type VenueKey = keyof typeof V;
+const venueGeo = (k: VenueKey, radiusM = 400) => ({ lat: V[k][0], lng: V[k][1], radiusM, label: V[k][2] });
+
+// Clearly-labeled sample events around Charlotte — every major type, so the map and events tab feel alive.
+// [id, title, kind, dayOffset, startHourET, hours, venue, area, tags, description]
+type ExtraEvent = [string, string, ConnectedEvent["kind"], number, number, number, VenueKey, string, string[], string];
 const EXTRA_EVENTS: ExtraEvent[] = [
-  ["ev_epic", "EPIC Robotics Open Lab", "workshop", 1, 14, 3, 35.3093, -80.7414, "EPIC Building, UNC Charlotte", "UNC Charlotte main campus", ["hardware", "ai"], "Bring a robot or borrow one. Embedded, CV and controls folks all welcome."],
-  ["ev_wit", "Women in Tech Mixer", "meetup", 2, 18, 2, 35.3086, -80.7336, "Student Union, UNC Charlotte", "UNC Charlotte main campus", ["careers", "social-impact", "dev-tools"], "Casual mixer for women and allies in tech. Mentors from local companies."],
-  ["ev_aibuilders", "Charlotte AI Builders Night", "meetup", 3, 18, 3, 35.244, -80.83, "Camp North End", "North Charlotte", ["ai", "startups", "dev-tools"], "Lightning demos of LLM apps and agents, then open networking."],
-  ["ev_fintechbfast", "Fintech Founders Breakfast", "meetup", 4, 8, 2, 35.2271, -80.8431, "Uptown Charlotte", "Uptown Charlotte", ["fintech", "startups"], "Early-stage fintech founders swap notes over coffee."],
-  ["ev_designcrit", "Design Critique Night", "workshop", 4, 19, 2, 35.2465, -80.811, "NoDa studio space", "NoDa", ["design", "consumer"], "Bring a Figma file, get kind and useful feedback."],
-  ["ev_ctf", "CTF Practice Session", "workshop", 2, 17, 3, 35.3075, -80.7357, "Woodward Hall, UNC Charlotte", "UNC Charlotte main campus", ["cybersecurity", "crypto"], "Beginner-friendly capture-the-flag practice in teams."],
-  ["ev_portalpitch", "Pitch Practice @ PORTAL", "pitch", 6, 17, 2, 35.311, -80.743, "PORTAL, UNC Charlotte", "UNC Charlotte main campus", ["startups", "entrepreneurship"], "Three-minute pitches, instant feedback from founders."],
-  ["ev_health", "Health Innovation Meetup", "meetup", 7, 18, 2, 35.2215, -80.8395, "Uptown Charlotte", "Uptown Charlotte", ["healthtech", "biotech", "ai"], "Clinicians and builders talk real healthcare problems."],
-  ["ev_climate", "Climate Tech Charlotte", "meetup", 8, 18, 2, 35.2337, -80.8253, "Optimist Hall", "Optimist Park", ["climate", "hardware", "data"], "Energy, mobility and sustainability builders."],
-  ["ev_gamejam", "Game Jam Kickoff", "hackathon", 9, 12, 30, 35.244, -80.854, "Johnson C. Smith University", "West End", ["gaming", "edtech"], "48-hour game jam. Artists, devs and sound designers wanted."],
-  ["ev_dataoh", "Data Science Office Hours", "workshop", 1, 16, 2, 35.3058, -80.7322, "Atkins Library, UNC Charlotte", "UNC Charlotte main campus", ["data", "ai", "research"], "Stuck on a model or a dataset? Drop in."],
-  ["ev_pmcoffee", "Product People Coffee", "meetup", 5, 9, 2, 35.2125, -80.859, "South End", "South End, Charlotte", ["startups", "consumer"], "PMs, designers and founders talk product."],
-  ["ev_web3", "Blockchain Builders", "meetup", 11, 19, 2, 35.221, -80.81, "Plaza Midwood", "Plaza Midwood", ["crypto", "fintech", "cybersecurity"], "Smart contracts, security and real use cases."],
-  ["ev_posters", "Research Poster Session", "seminar", 6, 13, 3, 35.3068, -80.7349, "Student Union, UNC Charlotte", "UNC Charlotte main campus", ["research", "biotech", "ai"], "Undergrad and grad research, plus collaborator matching."],
-  ["ev_queens", "Queens Entrepreneurship Fair", "career-fair", 10, 11, 4, 35.189, -80.834, "Queens University of Charlotte", "Myers Park", ["entrepreneurship", "startups", "careers"], "Student ventures and local investors."],
-  ["ev_davidson", "Davidson Hack Night", "hackathon", 12, 18, 5, 35.5013, -80.846, "Davidson College", "Davidson", ["ai", "dev-tools"], "Evening hack night. Bring a half-built project."],
-  ["ev_edtech", "Educators × Builders", "meetup", 13, 17, 2, 35.3128, -80.7465, "University City", "University City", ["edtech", "social-impact"], "Teachers and developers co-design classroom tools."],
-  ["ev_mobile", "Mobile Dev Meetup", "meetup", 14, 18, 2, 35.151, -80.829, "SouthPark", "SouthPark", ["consumer", "design"], "iOS, Android and React Native talks."],
-  ["ev_founders", "Women Founders Fireside", "conference", 15, 17, 3, 35.053, -80.849, "Ballantyne", "Ballantyne", ["startups", "entrepreneurship"], "Fireside chats with founders, then open networking."],
+  // Hackathons
+  ["ev_gamejam", "Game Jam Kickoff", "hackathon", 9, 12, 30, "jcsu", "West End", ["gaming", "edtech"], "48-hour game jam. Artists, devs and sound designers wanted."],
+  ["ev_davidson", "Davidson Hack Night", "hackathon", 12, 18, 5, "davidson", "Davidson", ["ai", "dev-tools"], "Evening hack night. Bring a half-built project."],
+  ["ev_civichack", "Civic Hack Day", "hackathon", 7, 10, 9, "imaginon", "Uptown Charlotte", ["social-impact", "data", "edtech"], "Build tools with city open data. Designers and data folks wanted."],
+  ["ev_healthhack", "Healthcare Hackathon", "hackathon", 18, 9, 30, "duke", "UNC Charlotte main campus", ["healthtech", "ai", "biotech"], "Clinicians bring problems, teams build prototypes."],
+  // Career fairs
+  ["ev_queens", "Queens Entrepreneurship Fair", "career-fair", 10, 11, 4, "queens", "Myers Park", ["entrepreneurship", "startups", "careers"], "Student ventures and local investors."],
+  ["ev_engfair", "Engineering & Tech Expo", "career-fair", 5, 10, 5, "cone", "UNC Charlotte main campus", ["careers", "dev-tools", "hardware"], "50+ employers hiring engineers and interns."],
+  ["ev_cpccfair", "Tech Careers Fair", "career-fair", 13, 10, 4, "cpcc", "Southwest Charlotte", ["careers", "cybersecurity", "data"], "IT, cybersecurity and data roles — entry level welcome."],
+  // Pitch nights
+  ["ev_portalpitch", "Pitch Practice @ PORTAL", "pitch", 6, 17, 2, "portal", "UNC Charlotte main campus", ["startups", "entrepreneurship"], "Three-minute pitches, instant feedback from founders."],
+  ["ev_packardpitch", "Packard Place Demo Night", "pitch", 8, 18, 3, "packard", "Uptown Charlotte", ["startups", "fintech", "ai"], "Early-stage founders demo to operators and angels."],
+  ["ev_noda", "Founders & Brews", "pitch", 11, 18, 3, "noda", "NoDa", ["startups", "consumer"], "One-minute pitches, then founders' social."],
+  // Meetups
+  ["ev_wit", "Women in Tech Mixer", "meetup", 2, 18, 2, "union", "UNC Charlotte main campus", ["careers", "social-impact", "dev-tools"], "Casual mixer for women and allies in tech. Mentors from local companies."],
+  ["ev_aibuilders", "Charlotte AI Builders Night", "meetup", 3, 18, 3, "campnorthend", "North Charlotte", ["ai", "startups", "dev-tools"], "Lightning demos of LLM apps and agents, then open networking."],
+  ["ev_fintechbfast", "Fintech Founders Breakfast", "meetup", 4, 8, 2, "bearden", "Uptown Charlotte", ["fintech", "startups"], "Early-stage fintech founders swap notes over coffee."],
+  ["ev_health", "Health Innovation Meetup", "meetup", 7, 18, 2, "discovery", "Uptown Charlotte", ["healthtech", "biotech", "ai"], "Clinicians and builders talk real healthcare problems."],
+  ["ev_climate", "Climate Tech Charlotte", "meetup", 8, 18, 2, "optimist", "Optimist Park", ["climate", "hardware", "data"], "Energy, mobility and sustainability builders."],
+  ["ev_pmcoffee", "Product People Coffee", "meetup", 5, 9, 2, "athertonmill", "South End", ["startups", "consumer"], "PMs, designers and founders talk product."],
+  ["ev_web3", "Blockchain Builders", "meetup", 11, 19, 2, "plaza", "Plaza Midwood", ["crypto", "fintech", "cybersecurity"], "Smart contracts, security and real use cases."],
+  ["ev_edtech", "Educators × Builders", "meetup", 13, 17, 2, "storrs", "UNC Charlotte main campus", ["edtech", "social-impact"], "Teachers and developers co-design classroom tools."],
+  ["ev_mobile", "Mobile Dev Meetup", "meetup", 14, 18, 2, "southpark", "SouthPark", ["consumer", "design"], "iOS, Android and React Native talks."],
+  // Workshops
+  ["ev_epic", "EPIC Robotics Open Lab", "workshop", 1, 14, 3, "epic", "UNC Charlotte main campus", ["hardware", "ai"], "Bring a robot or borrow one. Embedded, CV and controls folks all welcome."],
+  ["ev_designcrit", "Design Critique Night", "workshop", 4, 19, 2, "noda", "NoDa", ["design", "consumer"], "Bring a Figma file, get kind and useful feedback."],
+  ["ev_ctf", "CTF Practice Session", "workshop", 2, 17, 3, "woodward", "UNC Charlotte main campus", ["cybersecurity", "crypto"], "Beginner-friendly capture-the-flag practice in teams."],
+  ["ev_dataoh", "Data Science Office Hours", "workshop", 1, 16, 2, "atkins", "UNC Charlotte main campus", ["data", "ai", "research"], "Stuck on a model or a dataset? Drop in."],
+  ["ev_resume", "Resume & LinkedIn Clinic", "workshop", 3, 12, 2, "cone", "UNC Charlotte main campus", ["careers"], "Recruiters review resumes one-on-one, 15 minutes each."],
+  // Conferences
+  ["ev_founders", "Women Founders Fireside", "conference", 15, 17, 3, "ballantyne", "Ballantyne", ["startups", "entrepreneurship"], "Fireside chats with founders, then open networking."],
+  ["ev_techsummit", "Charlotte Tech Summit", "conference", 20, 9, 8, "convention", "Uptown Charlotte", ["ai", "fintech", "dev-tools", "careers"], "Talks, startup alley and a big networking hall."],
+  ["ev_devfest", "DevFest Carolinas", "conference", 16, 9, 8, "convention", "Uptown Charlotte", ["dev-tools", "ai", "consumer"], "Community developer conference: web, mobile, cloud and AI."],
+  // Seminars
+  ["ev_posters", "Research Poster Session", "seminar", 6, 13, 3, "union", "UNC Charlotte main campus", ["research", "biotech", "ai"], "Undergrad and grad research, plus collaborator matching."],
+  ["ev_quantsem", "Quant Finance Seminar", "seminar", 9, 16, 2, "woodward", "UNC Charlotte main campus", ["quant-finance", "data", "fintech"], "Market microstructure talk, then Q&A with practitioners."],
+  ["ev_aiethics", "Responsible AI Seminar", "seminar", 14, 15, 2, "atkins", "UNC Charlotte main campus", ["ai", "social-impact", "research"], "Bias, privacy and safety in deployed ML systems."],
 ];
 
 /** Public demo login shown on the login page. Fictional account, clearly labeled. */
@@ -126,6 +175,8 @@ const PEOPLE: P[] = [
 // Approximate geofence covering UNC Charlotte's main campus (McEniry Hall is inside it).
 // Generous radius on purpose: we only need "at the venue", never a precise position.
 const CAMPUS_GEO = { lat: 35.3071, lng: -80.7338, radiusM: 1100, label: "UNC Charlotte main campus" };
+// CrownHacks pin sits exactly on McEniry Hall; the check-in geofence still covers the whole campus.
+const MCENIRY_GEO = { lat: 35.307103, lng: -80.730068, radiusM: 1300, label: "UNC Charlotte main campus" };
 
 // Zone layout on a 100 x 60 grid. Illustrative — not an official floor plan.
 const CROWNHACKS_ZONES = [
@@ -172,16 +223,17 @@ function events(now: Date): ConnectedEvent[] {
       area: "UNC Charlotte main campus",
       tags: ["ai", "cybersecurity", "biotech", "startups", "crypto", "research"],
       zones: CROWNHACKS_ZONES,
-      geo: CAMPUS_GEO,
+      geo: MCENIRY_GEO,
       checkInCode: CROWNHACKS_CHECKIN_CODE,
       isSample: !crownLive,
     },
-    { id: "ev_pitch", title: "Charlotte Student Pitch Night", host: "Sample event", kind: "pitch", description: "Student founders pitch early ideas to local operators and angels. Great for finding business cofounders and feedback.", start: at(5, 18), end: at(5, 21), venue: "Uptown Charlotte (sample)", area: "Uptown Charlotte", tags: ["startups", "entrepreneurship", "fintech"], zones: genericZones("zp"), geo: { lat: 35.2271, lng: -80.8431, radiusM: 600, label: "Uptown Charlotte" }, isSample: true },
-    { id: "ev_career", title: "Fall Tech & Finance Career Fair", host: "Sample event", kind: "career-fair", description: "Recruiters from tech and finance companies meet students for internships and new-grad roles.", start: at(9, 10), end: at(9, 15), venue: "UNC Charlotte Student Union (sample)", area: "UNC Charlotte main campus", tags: ["careers", "fintech", "dev-tools"], zones: genericZones("zc"), geo: CAMPUS_GEO, isSample: true },
-    { id: "ev_ai", title: "Applied AI Research Seminar", host: "Sample event", kind: "seminar", description: "Grad students present applied ML work; open Q&A and research-collaboration mixer afterwards.", start: at(3, 16), end: at(3, 18), venue: "Woodward Hall (sample)", area: "UNC Charlotte main campus", tags: ["ai", "research", "healthtech"], zones: genericZones("za"), geo: CAMPUS_GEO, isSample: true },
-    { id: "ev_design", title: "Design Systems Workshop", host: "Sample event", kind: "workshop", description: "Hands-on Figma workshop on building component libraries — designers and frontend engineers welcome.", start: at(12, 17), end: at(12, 19), venue: "Storrs Hall (sample)", area: "UNC Charlotte main campus", tags: ["design", "consumer"], zones: genericZones("zd"), geo: CAMPUS_GEO, isSample: true },
-    { id: "ev_fintech", title: "Fintech Builders Meetup", host: "Sample event", kind: "meetup", description: "Monthly meetup for people building in payments, banking and investing.", start: at(16, 18), end: at(16, 20), venue: "South End (sample)", area: "South End, Charlotte", tags: ["fintech", "quant-finance", "startups", "crypto"], zones: genericZones("zf"), geo: { lat: 35.2125, lng: -80.859, radiusM: 600, label: "South End, Charlotte" }, isSample: true },
-    ...EXTRA_EVENTS.map(([id, title, kind, day, hour, hours, lat, lng, venue, area, tags, description]) => {
+    { id: "ev_pitch", title: "Charlotte Student Pitch Night", host: "Sample event", kind: "pitch", description: "Student founders pitch early ideas to local operators and angels. Great for finding business cofounders and feedback.", start: at(5, 18), end: at(5, 21), venue: "Uptown Charlotte (sample)", area: "Uptown Charlotte", tags: ["startups", "entrepreneurship", "fintech"], zones: genericZones("zp"), geo: venueGeo("packard"), isSample: true },
+    { id: "ev_career", title: "Fall Tech & Finance Career Fair", host: "Sample event", kind: "career-fair", description: "Recruiters from tech and finance companies meet students for internships and new-grad roles.", start: at(9, 10), end: at(9, 15), venue: "UNC Charlotte Student Union (sample)", area: "UNC Charlotte main campus", tags: ["careers", "fintech", "dev-tools"], zones: genericZones("zc"), geo: venueGeo("union"), isSample: true },
+    { id: "ev_ai", title: "Applied AI Research Seminar", host: "Sample event", kind: "seminar", description: "Grad students present applied ML work; open Q&A and research-collaboration mixer afterwards.", start: at(3, 16), end: at(3, 18), venue: "Woodward Hall (sample)", area: "UNC Charlotte main campus", tags: ["ai", "research", "healthtech"], zones: genericZones("za"), geo: venueGeo("woodward"), isSample: true },
+    { id: "ev_design", title: "Design Systems Workshop", host: "Sample event", kind: "workshop", description: "Hands-on Figma workshop on building component libraries — designers and frontend engineers welcome.", start: at(12, 17), end: at(12, 19), venue: "Storrs Hall (sample)", area: "UNC Charlotte main campus", tags: ["design", "consumer"], zones: genericZones("zd"), geo: venueGeo("storrs"), isSample: true },
+    { id: "ev_fintech", title: "Fintech Builders Meetup", host: "Sample event", kind: "meetup", description: "Monthly meetup for people building in payments, banking and investing.", start: at(16, 18), end: at(16, 20), venue: "South End (sample)", area: "South End, Charlotte", tags: ["fintech", "quant-finance", "startups", "crypto"], zones: genericZones("zf"), geo: venueGeo("athertonmill"), isSample: true },
+    ...EXTRA_EVENTS.map(([id, title, kind, day, hour, hours, venueKey, area, tags, description]) => {
+      const [lat, lng, venue] = V[venueKey];
       const start = at(day, hour);
       return {
         id,
@@ -288,7 +340,7 @@ export function buildSeed(now = new Date()): Database {
   }
   // Deterministic attendees for the extra sample events: people whose interests overlap the event's tags.
   const ids = PEOPLE.filter((p) => p.visibility !== "hidden" && p.id !== DEMO_USER_ID);
-  EXTRA_EVENTS.forEach(([eventId, , , , , , , , , , tags], k) => {
+  EXTRA_EVENTS.forEach(([eventId, , , , , , , , tags], k) => {
     const fans = ids.filter((p) => p.interests.some((i) => tags.includes(i)));
     const extra = ids.filter((_, j) => (j * 7 + k * 3) % 11 === 0);
     const chosen = [...new Set([...fans.slice(k % 3, (k % 3) + 7), ...extra])].slice(0, 10);
@@ -406,6 +458,16 @@ export function buildSeed(now = new Date()): Database {
       { viewerId: "u_maya", targetId: DEMO_USER_ID, at: iso(-80) },
       { viewerId: "u_sam", targetId: DEMO_USER_ID, at: iso(-150) },
     ],
+    lounge: [
+      ["u_emily", "Welcome to CrownHacks! 👋 Team-formation mixer is by the big windows. Come say hi if you don't have a team yet.", 180],
+      ["u_noah", "First hackathon here — anyone need a frontend newbie who learns fast?", 150],
+      ["u_kevin", "Mentors are at the corner table until 6. Bring your bugs.", 120],
+      ["u_maya", "Doing quick UX reviews at the mixer for the next hour ✏️", 75],
+      ["u_sam", "Still looking for a backend + AI person for a fintech savings app. Pilot users ready!", 50],
+      ["u_zoe", "Pizza just arrived at Food & coffee 🍕", 22],
+      ["u_alex", "Anyone else doing the Most Technical track? Would love to compare notes on LLM latency.", 9],
+    ].map(([userId, body, mins], i) => ({ id: `lg_${i}`, eventId: CROWNHACKS_ID, userId: userId as string, body: body as string, createdAt: iso(-(mins as number)), reports: [] })),
+    photos: [],
   };
 
   function mkReq(

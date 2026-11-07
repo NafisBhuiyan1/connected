@@ -1319,6 +1319,132 @@ export function liveMap(me: Profile, eventId?: string) {
   };
 }
 
+// ---------- event lounge (public chat) & photos ----------
+
+const REPORT_HIDE_THRESHOLD = 3;
+
+function requireMember(db: Database, me: Profile, eventId: string) {
+  const ev = db.events.find((e) => e.id === eventId);
+  if (!ev) throw new ApiError(404, "Event not found");
+  if (!db.memberships.some((m) => m.userId === me.id && m.eventId === eventId)) throw new ApiError(403, "Join the event to see its lounge.");
+  return ev;
+}
+
+export function lounge(me: Profile, eventId: string) {
+  const db = getDb();
+  const ev = requireMember(db, me, eventId);
+  const authors = new Map<string, PublicProfile>();
+  const messages = (db.lounge ?? [])
+    .filter((m) => m.eventId === eventId && m.reports.length < REPORT_HIDE_THRESHOLD && !blocked(db, me.id, m.userId))
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .slice(-100)
+    .map((m) => {
+      if (!authors.has(m.userId)) {
+        const p = db.profiles.find((x) => x.id === m.userId);
+        if (p) authors.set(m.userId, pub(db, me, p));
+      }
+      return { id: m.id, userId: m.userId, body: m.body, createdAt: m.createdAt, mine: m.userId === me.id, reportedByMe: m.reports.includes(me.id) };
+    });
+  const photos = (db.photos ?? [])
+    .filter((p) => p.eventId === eventId && p.reports.length < REPORT_HIDE_THRESHOLD && !blocked(db, me.id, p.userId))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .map((p) => {
+      if (!authors.has(p.userId)) {
+        const u = db.profiles.find((x) => x.id === p.userId);
+        if (u) authors.set(p.userId, pub(db, me, u));
+      }
+      return { id: p.id, userId: p.userId, caption: p.caption, url: `/api/photos/${p.id}`, likes: p.likes.length, likedByMe: p.likes.includes(me.id), createdAt: p.createdAt, mine: p.userId === me.id };
+    });
+  const online = db.memberships.filter((m) => m.eventId === eventId && m.optIn && m.checkedInAt).length;
+  return { event: { id: ev.id, title: ev.title }, messages, photos, authors: Object.fromEntries(authors), online };
+}
+
+export function postLounge(me: Profile, eventId: string, body: string) {
+  const text = body.trim();
+  if (!text) throw new ApiError(400, "Message is empty.");
+  if (text.length > 500) throw new ApiError(400, "Keep it under 500 characters.");
+  return mutate((db) => {
+    requireMember(db, me, eventId);
+    db.lounge ??= [];
+    const now = Date.now();
+    const mine = db.lounge.filter((m) => m.userId === me.id && now - new Date(m.createdAt).getTime() < 10 * 60_000);
+    if (mine.some((m) => now - new Date(m.createdAt).getTime() < 2_500)) throw new ApiError(429, "Slow down a little.");
+    if (mine.length >= 20) throw new ApiError(429, "You've posted a lot — take a short break.");
+    const msg = { id: newId("lg"), eventId, userId: me.id, body: text, createdAt: new Date(now).toISOString(), reports: [] as string[] };
+    db.lounge.push(msg);
+    if (db.lounge.length > 5000) db.lounge.splice(0, db.lounge.length - 5000);
+    return msg;
+  });
+}
+
+export function reportLounge(me: Profile, messageId: string) {
+  return mutate((db) => {
+    const m = (db.lounge ?? []).find((x) => x.id === messageId);
+    if (!m) throw new ApiError(404, "Message not found");
+    if (m.userId === me.id) {
+      db.lounge = db.lounge.filter((x) => x.id !== messageId); // reporting your own = delete
+      return { deleted: true };
+    }
+    if (!m.reports.includes(me.id)) m.reports.push(me.id);
+    return { hidden: m.reports.length >= REPORT_HIDE_THRESHOLD };
+  });
+}
+
+const PHOTO_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif" };
+export const MAX_PHOTO_BYTES = 6 * 1024 * 1024;
+
+export async function uploadPhoto(me: Profile, eventId: string, file: File, caption: string) {
+  const ext = PHOTO_TYPES[file.type];
+  if (!ext) throw new ApiError(415, "Only JPEG, PNG, WebP or GIF images.");
+  if (file.size > MAX_PHOTO_BYTES) throw new ApiError(413, "Photos must be under 6 MB.");
+  const db = getDb();
+  requireMember(db, me, eventId);
+  const recent = (db.photos ?? []).filter((p) => p.userId === me.id && Date.now() - new Date(p.createdAt).getTime() < 3_600_000);
+  if (recent.length >= 15) throw new ApiError(429, "Photo limit reached for this hour.");
+  const bytes = Buffer.from(await file.arrayBuffer());
+  // Verify the magic bytes really are an image (don't trust the browser's MIME label).
+  const sig = bytes.subarray(0, 12).toString("hex");
+  const looksLikeImage = sig.startsWith("ffd8ff") || sig.startsWith("89504e47") || sig.startsWith("47494638") || (sig.startsWith("52494646") && bytes.subarray(8, 12).toString() === "WEBP");
+  if (!looksLikeImage) throw new ApiError(415, "That file doesn't look like an image.");
+  const id = newId("ph");
+  const fileName = `${id}.${ext}`;
+  const { photosDir } = await import("./store");
+  const fs = await import("node:fs");
+  const path = await import("node:path");
+  fs.writeFileSync(path.join(photosDir(), fileName), bytes);
+  return mutate((d) => {
+    d.photos ??= [];
+    const photo = { id, eventId, userId: me.id, file: fileName, mime: file.type, caption: caption.trim().slice(0, 200), likes: [] as string[], reports: [] as string[], createdAt: new Date().toISOString() };
+    d.photos.push(photo);
+    return photo;
+  });
+}
+
+export function photoFile(me: Profile, photoId: string) {
+  const db = getDb();
+  const p = (db.photos ?? []).find((x) => x.id === photoId);
+  if (!p || p.reports.length >= REPORT_HIDE_THRESHOLD) throw new ApiError(404, "Photo not found");
+  if (!db.memberships.some((m) => m.userId === me.id && m.eventId === p.eventId)) throw new ApiError(403, "Join the event to see its photos.");
+  return p;
+}
+
+export function photoAction(me: Profile, photoId: string, action: "like" | "report" | "delete") {
+  return mutate((db) => {
+    const p = (db.photos ?? []).find((x) => x.id === photoId);
+    if (!p) throw new ApiError(404, "Photo not found");
+    if (action === "delete") {
+      if (p.userId !== me.id) throw new ApiError(403, "You can only delete your own photos.");
+      db.photos = db.photos.filter((x) => x.id !== photoId);
+      return { deleted: true };
+    }
+    const list = action === "like" ? p.likes : p.reports;
+    const i = list.indexOf(me.id);
+    if (action === "like" && i >= 0) list.splice(i, 1);
+    else if (i < 0) list.push(me.id);
+    return { likes: p.likes.length, likedByMe: p.likes.includes(me.id) };
+  });
+}
+
 /** Events as clients may see them: the venue check-in code never leaves the server. */
 export function publicEvent<T extends { checkInCode?: string }>(ev: T): Omit<T, "checkInCode"> {
   const { checkInCode: _code, ...rest } = ev;

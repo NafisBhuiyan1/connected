@@ -20,14 +20,15 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ConnectDialog, LoadingCards, MatchCard, PersonHeader, type RequestState } from "@/components/people";
 import { useSession } from "@/components/session";
 import { useToast } from "@/components/toast";
 import { Badge, Button, Card, Chip, cx, Empty, ErrorBox, Field, Input, Select, Skeleton, Toggle } from "@/components/ui";
 import { ZoneLegend, ZoneMap, type MapPerson } from "@/components/zone-map";
 import { LocationCheckIn } from "@/components/location";
-import { MapPinCheck } from "lucide-react";
+import { EventLounge } from "@/components/event-lounge";
+import { MapPinCheck, MessageCircle } from "lucide-react";
 import { api, fmtDateTime, fmtTime, useApi } from "@/lib/client";
 import type { EventInsights } from "@/lib/engine/events";
 import { interestLabel } from "@/lib/ontology";
@@ -100,8 +101,11 @@ function useEventSave(id: string, reload: () => Promise<void>) {
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data, error, loading, reload } = useApi<EventDetail>(`/api/events/${id}`, { poll: 5000 });
-  const [tab, setTab] = useState<"space" | "insights">("space");
+  const [tab, setTab] = useState<"space" | "lounge" | "insights">("space");
   const { save, saving } = useEventSave(id, reload);
+  useEffect(() => {
+    if (window.location.hash === "#lounge") setTab("lounge");
+  }, []);
 
   if (error && !data) {
     return (
@@ -133,8 +137,9 @@ export default function EventDetailPage() {
       <div className="mt-6 flex gap-1 rounded-2xl border border-line bg-surface p-1 sm:inline-flex">
         {(
           [
-            { id: "space", label: "Networking space", icon: Radio },
-            { id: "insights", label: "Organizer insights", icon: BarChart3 },
+            { id: "space", label: "People", icon: Radio },
+            { id: "lounge", label: "Lounge", icon: MessageCircle },
+            { id: "insights", label: "Insights", icon: BarChart3 },
           ] as const
         ).map((t) => (
           <button
@@ -155,6 +160,10 @@ export default function EventDetailPage() {
       <div className="mt-5">
         {tab === "space" ? (
           <SpaceTab data={data} reload={reload} save={save} saving={saving} />
+        ) : tab === "lounge" ? (
+          <div id="lounge">
+            <EventLounge eventId={event.id} joined={Boolean(data.membership)} />
+          </div>
         ) : (
           <InsightsTab insights={data.insights} />
         )}
