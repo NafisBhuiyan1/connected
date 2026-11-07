@@ -196,9 +196,7 @@ function Discover() {
               icon={<Users className="size-5" />}
               title="No one matches yet"
               body={
-                lastQuery?.ev
-                  ? "Nobody who opted in at this event fits that goal right now. Try everyone discoverable, or broaden the goal."
-                  : "Try describing the goal differently — mention the skills or roles you need."
+                lastQuery?.ev ? "No fit at this event yet." : "Try naming the skills you need."
               }
               action={
                 lastQuery?.ev ? (
@@ -220,7 +218,7 @@ function Discover() {
             />
           )
         ) : (
-          <Empty icon={<Search className="size-5" />} title="Describe a goal to start" body="Connected works best with a specific goal — what you're building and who you need." />
+          <Empty icon={<Search className="size-5" />} title="Describe a goal to start" body="What you're building and who you need." />
         )}
       </div>
     </div>
@@ -238,7 +236,7 @@ function Interpretation({ result, intent }: { result: DiscoverResponse; intent: 
             <Brain className="size-[18px]" />
           </span>
           <div className="min-w-0">
-            <p className="text-[12px] font-medium tracking-wide text-muted uppercase">Connected understood</p>
+            <p className="text-[12px] font-medium tracking-wide text-muted uppercase">Understood</p>
             <p className="mt-0.5 text-[15px] font-semibold text-ink">{intent.summary}</p>
           </div>
         </div>
@@ -257,7 +255,7 @@ function Interpretation({ result, intent }: { result: DiscoverResponse; intent: 
 
       {roles.length ? (
         <div className="mt-4">
-          <p className="mb-1.5 text-[12px] font-medium text-ink-2">Roles to look for</p>
+          <p className="mb-1.5 text-[12px] font-medium text-ink-2">Roles</p>
           <div className="flex flex-wrap gap-1.5">
             {roles.map((r) => (
               <span key={r.roleId} title={r.why} className="inline-flex items-center gap-2 rounded-full border border-brand-100 bg-brand-50/60 py-1 pr-2.5 pl-1.5 text-[12.5px] font-medium text-brand-800">
@@ -289,10 +287,9 @@ function Interpretation({ result, intent }: { result: DiscoverResponse; intent: 
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line pt-3 text-[12px] text-muted">
         <span className="inline-flex items-center gap-1.5">
           <Gauge className="size-3.5" />
-          Ranked {result.poolSize} discoverable {result.poolSize === 1 ? "person" : "people"} in {result.rankMs} ms
+          {result.poolSize} people ranked in {result.rankMs} ms
         </span>
-        {result.source === "claude" ? <span>Goal understood in {(result.aiMs / 1000).toFixed(1)} s</span> : null}
-        <span>Hidden and blocked profiles are never ranked.</span>
+        {result.source === "claude" ? <span>AI: {(result.aiMs / 1000).toFixed(1)} s</span> : null}
       </div>
     </Card>
   );

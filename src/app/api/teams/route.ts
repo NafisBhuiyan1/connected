@@ -12,7 +12,7 @@ const Input = z.object({
   eventId: z.string().optional(),
   missionId: z.string().optional(),
   roles: z.array(z.object({ roleId: z.string(), why: z.string().max(300), weight: z.number() })).max(10),
-  members: z.array(z.object({ userId: z.string(), roleId: z.string() })).max(4),
+  members: z.array(z.object({ userId: z.string(), roleId: z.string() })).max(3),
   coverage: z.number().min(0).max(1),
   openRoles: z.array(z.string()).max(6).optional(),
 });

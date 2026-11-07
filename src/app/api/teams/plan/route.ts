@@ -18,8 +18,8 @@ const Intent = z.object({
 const Input = z.object({
   pitch: z.string().min(8, "Describe your idea in a sentence").max(1200),
   eventId: z.string().optional(),
-  size: z.number().int().min(1).max(4).optional(),
-  locked: z.array(z.string()).max(4).optional(),
+  size: z.number().int().min(1).max(3).optional(),
+  locked: z.array(z.string()).max(3).optional(),
   excluded: z.array(z.string()).max(40).optional(),
   intent: Intent.optional(), // reuse the previous interpretation when the user edits roles or swaps people
 });

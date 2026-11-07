@@ -58,6 +58,33 @@ export interface Profile {
   isDemo: boolean;
   avatarHue: number;
   createdAt: string;
+  prefs?: Partial<Prefs>;
+}
+
+/** Discovery, safety and app preferences. Missing fields fall back to DEFAULT_PREFS. */
+export interface Prefs {
+  /** Ghost mode: instantly disappear from the live map and nearby lists. */
+  ghostMode: boolean;
+  /** Who may see me on the map: everyone at my events, or only people I'd be a good match for. */
+  mapAudience: "event" | "compatible";
+  /** Show my approximate zone (otherwise I'm placed loosely around the venue). */
+  showZone: boolean;
+  /** Only show me people at or above this compatibility on the map. */
+  minScore: number;
+  /** Only show people who are open to chat / team up right now. */
+  openNowOnly: boolean;
+  /** Event discovery radius in miles. */
+  radiusMiles: number;
+  /** UI sound effects. */
+  sounds: boolean;
+  /** Let people see that I viewed their profile (and see who viewed mine). */
+  viewTransparency: boolean;
+}
+
+export interface ProfileView {
+  viewerId: string;
+  targetId: string;
+  at: string;
 }
 
 export interface EventZone {
@@ -271,6 +298,7 @@ export interface Database {
   blocks: Block[];
   accounts: Account[];
   posts: Post[];
+  views: ProfileView[];
 }
 
 // ---------- Engine I/O ----------

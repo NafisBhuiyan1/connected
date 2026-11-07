@@ -59,14 +59,14 @@ export function Constellation({
 
     const seedNodes = () => {
       const mobile = w < 640;
-      const target = Math.round((mobile ? 34 : Math.min(88, 40 + (w * h) / 24000)) * density);
+      const target = Math.round((mobile ? 24 : Math.min(64, 32 + (w * h) / 30000)) * density);
       nodes = Array.from({ length: target }, () => ({
         x: Math.random() * w,
         y: Math.random() * h,
-        vx: (Math.random() - 0.5) * 0.18,
-        vy: (Math.random() - 0.5) * 0.18,
-        r: Math.random() * 1.4 + 0.8,
-        hue: Math.random() < 0.6 ? 244 : 266,
+        vx: (Math.random() - 0.5) * 0.10,
+        vy: (Math.random() - 0.5) * 0.10,
+        r: Math.random() * 0.6 + 0.35,
+        hue: Math.random() < 0.7 ? 220 : 240,
         phase: Math.random() * Math.PI * 2,
       }));
     };
@@ -131,7 +131,7 @@ export function Constellation({
 
       // links
       const links: [number, number][] = [];
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 0.6;
       for (let i = 0; i < nodes.length; i++) {
         const a = nodes[i];
         for (let j = i + 1; j < nodes.length; j++) {
@@ -141,7 +141,7 @@ export function Constellation({
           const d2 = dx * dx + dy * dy;
           if (d2 < maxD2) {
             const t = 1 - Math.sqrt(d2) / maxD;
-            ctx.strokeStyle = `hsla(${(a.hue + b.hue) / 2}, 90%, 72%, ${t * 0.32})`;
+            ctx.strokeStyle = `hsla(${(a.hue + b.hue) / 2}, 35%, 82%, ${t * 0.12})`;
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
             ctx.lineTo(b.x, b.y);
@@ -159,7 +159,7 @@ export function Constellation({
           const d = Math.hypot(dx, dy);
           if (d < 190) {
             const t = 1 - d / 190;
-            ctx.strokeStyle = `rgba(243, 241, 234, ${t * 0.45})`;
+            ctx.strokeStyle = `rgba(243, 241, 234, ${t * 0.20})`;
             ctx.beginPath();
             ctx.moveTo(n.x, n.y);
             ctx.lineTo(pointer.x, pointer.y);
@@ -170,7 +170,7 @@ export function Constellation({
 
       // sparks travelling along links (messages being sent)
       if (dt > 0) {
-        if (sparks.length < (w < 640 ? 3 : 7) && links.length && Math.random() < 0.04) {
+        if (sparks.length < (w < 640 ? 1 : 2) && links.length && Math.random() < 0.012) {
           const [a, b] = links[Math.floor(Math.random() * links.length)];
           sparks.push({ a, b, t: 0, speed: 0.0007 + Math.random() * 0.0008 });
         }
@@ -185,25 +185,25 @@ export function Constellation({
           }
           const x = A.x + (B.x - A.x) * s.t;
           const y = A.y + (B.y - A.y) * s.t;
-          const g = ctx.createRadialGradient(x, y, 0, x, y, 9);
-          g.addColorStop(0, "rgba(255, 236, 248, 0.95)");
-          g.addColorStop(0.4, "rgba(176, 150, 255, 0.45)");
+          const g = ctx.createRadialGradient(x, y, 0, x, y, 3);
+          g.addColorStop(0, "rgba(245, 247, 255, 0.60)");
+          g.addColorStop(0.4, "rgba(200, 214, 255, 0.18)");
           g.addColorStop(1, "rgba(120, 100, 255, 0)");
           ctx.fillStyle = g;
           ctx.beginPath();
-          ctx.arc(x, y, 9, 0, Math.PI * 2);
+          ctx.arc(x, y, 3, 0, Math.PI * 2);
           ctx.fill();
         }
       }
 
       // nodes
       for (const n of nodes) {
-        const tw = 0.65 + Math.sin(n.phase) * 0.35;
-        ctx.fillStyle = `hsla(${n.hue}, 95%, 75%, ${0.12 * tw})`;
+        const tw = 0.82 + Math.sin(n.phase) * 0.18;
+        ctx.fillStyle = `hsla(${n.hue}, 24%, 90%, ${0.04 * tw})`;
         ctx.beginPath();
-        ctx.arc(n.x, n.y, n.r * 4.5, 0, Math.PI * 2);
+        ctx.arc(n.x, n.y, n.r * 2.6, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = `hsla(${n.hue}, 100%, 88%, ${0.55 + 0.45 * tw})`;
+        ctx.fillStyle = `hsla(${n.hue}, 24%, 92%, ${0.30 + 0.35 * tw})`;
         ctx.beginPath();
         ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
         ctx.fill();
@@ -282,13 +282,13 @@ function mulberry32(seed: number) {
 
 const STARS = (() => {
   const rand = mulberry32(20261107);
-  return Array.from({ length: 140 }, (_, i) => ({
+  return Array.from({ length: 112 }, (_, i) => ({
     x: Math.round(rand() * 10000) / 100,
     y: Math.round(rand() * 10000) / 100,
-    r: rand() < 0.08 ? 1.6 : rand() < 0.35 ? 1.1 : 0.7,
-    o: Math.round((0.25 + rand() * 0.6) * 100) / 100,
-    d: Math.round(rand() * 600) / 100,
-    tw: i % 5 === 0,
+    r: rand() < 0.05 ? 1.05 : rand() < 0.30 ? 0.7 : 0.4,
+    o: Math.round((0.16 + rand() * 0.38) * 100) / 100,
+    d: Math.round(rand() * 1000) / 100,
+    tw: i % 17 === 0,
   }));
 })();
 
@@ -304,7 +304,7 @@ export function Starfield({ className = "" }: { className?: string }) {
           fill="#f3f1ea"
           opacity={s.o}
           className={s.tw ? "cx-twinkle" : undefined}
-          style={s.tw ? { animationDelay: `${s.d}s` } : undefined}
+          style={s.tw ? { animationDelay: `${s.d}s`, animationDuration: "11s" } : undefined}
         />
       ))}
     </svg>

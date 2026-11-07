@@ -23,7 +23,32 @@ import { tagText } from "./ontology";
 import type { Account, Post } from "./types";
 
 export { CROWNHACKS_ID };
-export const DB_VERSION = 5;
+export const DB_VERSION = 6;
+
+// More clearly-labeled sample events around Charlotte, so the map and events tab feel alive.
+// [id, title, kind, dayOffset, startHourET, hours, lat, lng, venue, area, tags, description]
+type ExtraEvent = [string, string, ConnectedEvent["kind"], number, number, number, number, number, string, string, string[], string];
+const EXTRA_EVENTS: ExtraEvent[] = [
+  ["ev_epic", "EPIC Robotics Open Lab", "workshop", 1, 14, 3, 35.3093, -80.7414, "EPIC Building, UNC Charlotte", "UNC Charlotte main campus", ["hardware", "ai"], "Bring a robot or borrow one. Embedded, CV and controls folks all welcome."],
+  ["ev_wit", "Women in Tech Mixer", "meetup", 2, 18, 2, 35.3086, -80.7336, "Student Union, UNC Charlotte", "UNC Charlotte main campus", ["careers", "social-impact", "dev-tools"], "Casual mixer for women and allies in tech. Mentors from local companies."],
+  ["ev_aibuilders", "Charlotte AI Builders Night", "meetup", 3, 18, 3, 35.244, -80.83, "Camp North End", "North Charlotte", ["ai", "startups", "dev-tools"], "Lightning demos of LLM apps and agents, then open networking."],
+  ["ev_fintechbfast", "Fintech Founders Breakfast", "meetup", 4, 8, 2, 35.2271, -80.8431, "Uptown Charlotte", "Uptown Charlotte", ["fintech", "startups"], "Early-stage fintech founders swap notes over coffee."],
+  ["ev_designcrit", "Design Critique Night", "workshop", 4, 19, 2, 35.2465, -80.811, "NoDa studio space", "NoDa", ["design", "consumer"], "Bring a Figma file, get kind and useful feedback."],
+  ["ev_ctf", "CTF Practice Session", "workshop", 2, 17, 3, 35.3075, -80.7357, "Woodward Hall, UNC Charlotte", "UNC Charlotte main campus", ["cybersecurity", "crypto"], "Beginner-friendly capture-the-flag practice in teams."],
+  ["ev_portalpitch", "Pitch Practice @ PORTAL", "pitch", 6, 17, 2, 35.311, -80.743, "PORTAL, UNC Charlotte", "UNC Charlotte main campus", ["startups", "entrepreneurship"], "Three-minute pitches, instant feedback from founders."],
+  ["ev_health", "Health Innovation Meetup", "meetup", 7, 18, 2, 35.2215, -80.8395, "Uptown Charlotte", "Uptown Charlotte", ["healthtech", "biotech", "ai"], "Clinicians and builders talk real healthcare problems."],
+  ["ev_climate", "Climate Tech Charlotte", "meetup", 8, 18, 2, 35.2337, -80.8253, "Optimist Hall", "Optimist Park", ["climate", "hardware", "data"], "Energy, mobility and sustainability builders."],
+  ["ev_gamejam", "Game Jam Kickoff", "hackathon", 9, 12, 30, 35.244, -80.854, "Johnson C. Smith University", "West End", ["gaming", "edtech"], "48-hour game jam. Artists, devs and sound designers wanted."],
+  ["ev_dataoh", "Data Science Office Hours", "workshop", 1, 16, 2, 35.3058, -80.7322, "Atkins Library, UNC Charlotte", "UNC Charlotte main campus", ["data", "ai", "research"], "Stuck on a model or a dataset? Drop in."],
+  ["ev_pmcoffee", "Product People Coffee", "meetup", 5, 9, 2, 35.2125, -80.859, "South End", "South End, Charlotte", ["startups", "consumer"], "PMs, designers and founders talk product."],
+  ["ev_web3", "Blockchain Builders", "meetup", 11, 19, 2, 35.221, -80.81, "Plaza Midwood", "Plaza Midwood", ["crypto", "fintech", "cybersecurity"], "Smart contracts, security and real use cases."],
+  ["ev_posters", "Research Poster Session", "seminar", 6, 13, 3, 35.3068, -80.7349, "Student Union, UNC Charlotte", "UNC Charlotte main campus", ["research", "biotech", "ai"], "Undergrad and grad research, plus collaborator matching."],
+  ["ev_queens", "Queens Entrepreneurship Fair", "career-fair", 10, 11, 4, 35.189, -80.834, "Queens University of Charlotte", "Myers Park", ["entrepreneurship", "startups", "careers"], "Student ventures and local investors."],
+  ["ev_davidson", "Davidson Hack Night", "hackathon", 12, 18, 5, 35.5013, -80.846, "Davidson College", "Davidson", ["ai", "dev-tools"], "Evening hack night. Bring a half-built project."],
+  ["ev_edtech", "Educators × Builders", "meetup", 13, 17, 2, 35.3128, -80.7465, "University City", "University City", ["edtech", "social-impact"], "Teachers and developers co-design classroom tools."],
+  ["ev_mobile", "Mobile Dev Meetup", "meetup", 14, 18, 2, 35.151, -80.829, "SouthPark", "SouthPark", ["consumer", "design"], "iOS, Android and React Native talks."],
+  ["ev_founders", "Women Founders Fireside", "conference", 15, 17, 3, 35.053, -80.849, "Ballantyne", "Ballantyne", ["startups", "entrepreneurship"], "Fireside chats with founders, then open networking."],
+];
 
 /** Public demo login shown on the login page. Fictional account, clearly labeled. */
 export const DEMO_EMAIL = "demo@connected.app";
@@ -156,6 +181,24 @@ function events(now: Date): ConnectedEvent[] {
     { id: "ev_ai", title: "Applied AI Research Seminar", host: "Sample event", kind: "seminar", description: "Grad students present applied ML work; open Q&A and research-collaboration mixer afterwards.", start: at(3, 16), end: at(3, 18), venue: "Woodward Hall (sample)", area: "UNC Charlotte main campus", tags: ["ai", "research", "healthtech"], zones: genericZones("za"), geo: CAMPUS_GEO, isSample: true },
     { id: "ev_design", title: "Design Systems Workshop", host: "Sample event", kind: "workshop", description: "Hands-on Figma workshop on building component libraries — designers and frontend engineers welcome.", start: at(12, 17), end: at(12, 19), venue: "Storrs Hall (sample)", area: "UNC Charlotte main campus", tags: ["design", "consumer"], zones: genericZones("zd"), geo: CAMPUS_GEO, isSample: true },
     { id: "ev_fintech", title: "Fintech Builders Meetup", host: "Sample event", kind: "meetup", description: "Monthly meetup for people building in payments, banking and investing.", start: at(16, 18), end: at(16, 20), venue: "South End (sample)", area: "South End, Charlotte", tags: ["fintech", "quant-finance", "startups", "crypto"], zones: genericZones("zf"), geo: { lat: 35.2125, lng: -80.859, radiusM: 600, label: "South End, Charlotte" }, isSample: true },
+    ...EXTRA_EVENTS.map(([id, title, kind, day, hour, hours, lat, lng, venue, area, tags, description]) => {
+      const start = at(day, hour);
+      return {
+        id,
+        title,
+        host: "Sample event",
+        kind,
+        description,
+        start,
+        end: new Date(new Date(start).getTime() + hours * 3_600_000).toISOString(),
+        venue: `${venue} (sample)`,
+        area,
+        tags,
+        zones: genericZones(`z${id.slice(3, 7)}`),
+        geo: { lat, lng, radiusM: 400, label: venue },
+        isSample: true,
+      } satisfies ConnectedEvent;
+    }),
   ];
 }
 
@@ -243,6 +286,14 @@ export function buildSeed(now = new Date()): Database {
   for (const [eventId, ids] of Object.entries(OTHER_EVENTS)) {
     for (const userId of ids) memberships.push({ eventId, userId, optIn: true, joinedAt: iso(-60 * 24) });
   }
+  // Deterministic attendees for the extra sample events: people whose interests overlap the event's tags.
+  const ids = PEOPLE.filter((p) => p.visibility !== "hidden" && p.id !== DEMO_USER_ID);
+  EXTRA_EVENTS.forEach(([eventId, , , , , , , , , , tags], k) => {
+    const fans = ids.filter((p) => p.interests.some((i) => tags.includes(i)));
+    const extra = ids.filter((_, j) => (j * 7 + k * 3) % 11 === 0);
+    const chosen = [...new Set([...fans.slice(k % 3, (k % 3) + 7), ...extra])].slice(0, 10);
+    for (const p of chosen) memberships.push({ eventId, userId: p.id, optIn: true, joinedAt: iso(-60 * 12) });
+  });
 
   // A forming team with an open role — powers Opportunity Radar ("a founder needs your skills").
   const teams: Team[] = [
@@ -350,6 +401,11 @@ export function buildSeed(now = new Date()): Database {
     blocks: [],
     accounts,
     posts,
+    views: [
+      { viewerId: "u_alex", targetId: DEMO_USER_ID, at: iso(-35) },
+      { viewerId: "u_maya", targetId: DEMO_USER_ID, at: iso(-80) },
+      { viewerId: "u_sam", targetId: DEMO_USER_ID, at: iso(-150) },
+    ],
   };
 
   function mkReq(

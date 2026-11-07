@@ -20,6 +20,8 @@ import type {
   Team,
 } from "../types";
 import { tagText } from "../ontology";
+import { CROWNHACKS_ID, DEFAULT_PREFS, PRIVACY } from "../constants";
+import type { ConnectedEvent, Prefs } from "../types";
 import { draftIntro, understandGoal, type AiSource } from "./ai";
 import { getDb, mutate, newId } from "./store";
 
@@ -73,7 +75,7 @@ export function discoveryPool(db: Database, viewer: Profile, eventId?: string): 
     if (p.id === viewer.id) return false;
     if (p.visibility === "hidden" || blocked(db, viewer.id, p.id)) return false;
     if (p.visibility === "events" && !sharesOptedInEvent(db, viewer.id, p.id)) return false;
-    if (eventId) return db.memberships.some((m) => m.userId === p.id && m.eventId === eventId && m.optIn);
+    if (eventId) return !prefsOf(p).ghostMode && db.memberships.some((m) => m.userId === p.id && m.eventId === eventId && m.optIn);
     return true;
   });
 }
@@ -126,6 +128,7 @@ export function personDetail(me: Profile, id: string) {
   const db = getDb();
   const p = profileOrThrow(db, id);
   if (!canSee(db, me, p)) throw new ApiError(404, "This profile isn't visible to you.");
+  if (p.id !== me.id) recordView(me, p);
   const ctx = matchCtx(db);
   const match = p.id === me.id ? null : scoreCandidate(me, p, buildNeed(me), ctx);
   const sharedEvents = db.events.filter(
@@ -354,11 +357,12 @@ export async function planTeam(
   const pool = discoveryPool(db, me, input.eventId).filter(
     (p) => !excluded.has(p.id) && p.openTo.some((k) => ["hackathon-team", "project", "cofounder", "research"].includes(k)),
   );
+  if ((input.locked?.length ?? 0) > 3) throw new ApiError(400, "A CrownHacks team includes you and at most 3 collaborators.");
   const result = formTeam({
     owner: me,
     roles,
     pool,
-    maxSize: Math.max(1, Math.min(4, input.size ?? 3)),
+    maxSize: Math.max(1, Math.min(3, input.size ?? 3)),
     eventId: input.eventId,
     locked: input.locked,
     ctx: matchCtx(db),
@@ -378,7 +382,7 @@ export function createTeam(
 ) {
   const title = input.title.trim().slice(0, 90) || "Untitled project";
   if (!input.members.length) throw new ApiError(400, "Pick at least one teammate to invite.");
-  if (input.members.length > 4) throw new ApiError(400, "Teams at CrownHacks are 2–4 people — invite at most 3 others here.");
+  if (input.members.length > 3) throw new ApiError(400, "Teams at CrownHacks are 2–4 people — invite at most 3 others here.");
   return mutate((db) => {
     const memberProfiles = input.members.map((m) => {
       const p = profileOrThrow(db, m.userId);
@@ -1091,6 +1095,228 @@ export function deletePost(me: Profile, postId: string) {
     db.posts.splice(i, 1);
     return { ok: true };
   });
+}
+
+// ---------- anti-stalking & preferences ----------
+
+export function prefsOf(p: Pick<Profile, "prefs">): Prefs {
+  return { ...DEFAULT_PREFS, ...(p.prefs ?? {}) };
+}
+
+/**
+ * Log a profile view and stop stalking-like repetition: opening the same profile more than
+ * PRIVACY.maxViewsPerHour times in an hour is refused. Views are pruned after 7 days.
+ */
+function recordView(me: Profile, target: Profile) {
+  mutate((db) => {
+    const now = Date.now();
+    db.views = (db.views ?? []).filter((v) => now - new Date(v.at).getTime() < 7 * 86_400_000);
+    const lastHour = db.views.filter((v) => v.viewerId === me.id && v.targetId === target.id && now - new Date(v.at).getTime() < 3_600_000);
+    if (lastHour.length >= PRIVACY.maxViewsPerHour) {
+      throw new ApiError(429, `You've opened ${target.name.split(" ")[0]}'s profile a lot in the last hour. Give it a break — repeated viewing is limited to protect people from stalking.`);
+    }
+    // Collapse rapid refreshes (polling, re-renders) into one view per 2 minutes.
+    if (!lastHour.some((v) => now - new Date(v.at).getTime() < 120_000)) {
+      db.views.push({ viewerId: me.id, targetId: target.id, at: new Date(now).toISOString() });
+    }
+  });
+}
+
+export function preferences(me: Profile) {
+  const db = getDb();
+  const p = prefsOf(me);
+  const since = Date.now() - 86_400_000;
+  // "Who viewed you" is reciprocal: only shown if you also let others see your views.
+  const viewers = p.viewTransparency
+    ? [...new Map(
+        (db.views ?? [])
+          .filter((v) => v.targetId === me.id && new Date(v.at).getTime() > since)
+          .sort((a, b) => b.at.localeCompare(a.at))
+          .map((v) => [v.viewerId, v] as const),
+      ).values()]
+        .map((v) => ({ at: v.at, viewer: db.profiles.find((x) => x.id === v.viewerId) }))
+        .filter((x): x is { at: string; viewer: Profile } => Boolean(x.viewer) && prefsOf(x.viewer!).viewTransparency)
+        .map((x) => ({ at: x.at, profile: pub(db, me, x.viewer) }))
+    : [];
+  const blocked = db.blocks
+    .filter((b) => b.userId === me.id)
+    .map((b) => db.profiles.find((x) => x.id === b.blockedId))
+    .filter((x): x is Profile => Boolean(x))
+    .map((x) => ({ id: x.id, name: x.name, headline: x.headline, avatarHue: x.avatarHue, isDemo: x.isDemo }));
+  return { prefs: p, visibility: me.visibility, allowRequests: me.allowRequests, viewers, blocked, privacy: PRIVACY };
+}
+
+export function updatePreferences(me: Profile, patch: Partial<Prefs> & { visibility?: Profile["visibility"]; allowRequests?: boolean }) {
+  return mutate((db) => {
+    const p = db.profiles.find((x) => x.id === me.id);
+    if (!p) throw new ApiError(404, "Profile not found");
+    const { visibility, allowRequests, ...prefPatch } = patch;
+    p.prefs = { ...prefsOf(p), ...prefPatch };
+    if (visibility) p.visibility = visibility;
+    if (allowRequests !== undefined) p.allowRequests = allowRequests;
+    return prefsOf(p);
+  });
+}
+
+export function unblock(me: Profile, userId: string) {
+  return mutate((db) => {
+    db.blocks = db.blocks.filter((b) => !(b.userId === me.id && b.blockedId === userId));
+    return { ok: true };
+  });
+}
+
+// ---------- live map ----------
+
+/** Deterministic pseudo-random in [0,1) from a string (FNV-1a). */
+function hash01(s: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return ((h >>> 0) % 1_000_000) / 1_000_000;
+}
+
+const M_PER_DEG_LAT = 111_320;
+function offset(lat: number, lng: number, dx: number, dy: number) {
+  return { lat: lat + dy / M_PER_DEG_LAT, lng: lng + dx / (M_PER_DEG_LAT * Math.cos((lat * Math.PI) / 180)) };
+}
+
+/** Map a zone's spot on the 100×60 venue grid to meters around the venue center. */
+function zoneAnchor(ev: ConnectedEvent, zoneId?: string) {
+  const z = ev.zones.find((x) => x.id === zoneId);
+  if (!z || !ev.geo) return null;
+  const cx = z.x + z.w / 2;
+  const cy = z.y + z.h / 2;
+  return offset(ev.geo.lat, ev.geo.lng, (cx - 50) * 3.6, (30 - cy) * 3.6);
+}
+
+export interface MapPerson {
+  profile: PublicProfile;
+  score: number;
+  reasons: string[];
+  lat: number;
+  lng: number;
+  zoneName?: string;
+  live: boolean;
+  liveLabel?: string;
+  hereNow: boolean;
+  requestState: ReturnType<typeof requestState>;
+}
+
+/**
+ * Privacy-preserving live map for one event.
+ * - Only people who opted in to this event, are discoverable to you, and aren't in ghost mode.
+ * - You must be opted in yourself (reciprocity) and the event must be live.
+ * - Positions are zone anchors + a per-viewer offset that re-randomizes every PRIVACY.refreshMinutes,
+ *   so two viewers (or one viewer over time) can't triangulate anyone. Nobody's GPS is ever used.
+ * - Zones with fewer than PRIVACY.minCrowd visible people become an anonymous crowd bubble.
+ * - People who chose "compatible only" are shown just to viewers they'd match well with.
+ */
+export function liveMap(me: Profile, eventId?: string) {
+  const db = getDb();
+  const ctx = matchCtx(db);
+  const now = new Date();
+  const myPrefs = prefsOf(me);
+  const myEvents = db.memberships.filter((m) => m.userId === me.id && m.optIn).map((m) => m.eventId);
+  const liveEvents = db.events.filter((e) => new Date(e.start) <= now && new Date(e.end) >= now);
+  const focus =
+    db.events.find((e) => e.id === eventId) ??
+    liveEvents.find((e) => myEvents.includes(e.id)) ??
+    db.events.find((e) => e.id === CROWNHACKS_ID) ??
+    db.events[0];
+
+  // Event "towers": every upcoming/live event with a location.
+  const need = buildNeed(me);
+  const pool = discoveryPool(db, me);
+  const events = db.events
+    .filter((e) => e.geo && new Date(e.end) >= now)
+    .map((e) => {
+      const ms = db.memberships.filter((m) => m.eventId === e.id && m.optIn);
+      const fits = ms
+        .map((m) => pool.find((p) => p.id === m.userId))
+        .filter((p): p is Profile => Boolean(p))
+        .map((p) => scoreCandidate(me, p, { ...need, eventId: e.id }, ctx).score)
+        .filter((s) => s >= 60).length;
+      return {
+        id: e.id,
+        title: e.title,
+        kind: e.kind,
+        lat: e.geo!.lat,
+        lng: e.geo!.lng,
+        venue: e.venue,
+        start: e.start,
+        end: e.end,
+        live: new Date(e.start) <= now && new Date(e.end) >= now,
+        attendees: ms.length,
+        strongMatches: fits,
+        joined: myEvents.includes(e.id),
+        isSample: e.isSample,
+      };
+    });
+
+  const base = { center: focus.geo ?? { lat: 35.3071, lng: -80.7338 }, focus: publicEvent(focus), events, privacy: PRIVACY, myPrefs };
+  const iAmIn = myEvents.includes(focus.id);
+  const isLive = new Date(focus.start) <= now && new Date(focus.end) >= now;
+  if (!iAmIn) return { ...base, people: [] as MapPerson[], crowds: [], me: { visible: false, reason: "Opt in to this event to see who's here." } };
+  if (!isLive) return { ...base, people: [] as MapPerson[], crowds: [], me: { visible: false, reason: "People appear on the map only while the event is live." } };
+
+  const bucket = Math.floor(now.getTime() / (PRIVACY.refreshMinutes * 60_000));
+  const eventNeed = { ...need, eventId: focus.id };
+  const candidates = discoveryPool(db, me, focus.id).filter((p) => !prefsOf(p).ghostMode);
+
+  const placed: (MapPerson & { zoneId: string })[] = [];
+  for (const p of candidates) {
+    const m = db.memberships.find((x) => x.userId === p.id && x.eventId === focus.id)!;
+    const match = scoreCandidate(me, p, eventNeed, ctx);
+    const theirPrefs = prefsOf(p);
+    if (theirPrefs.mapAudience === "compatible" && match.backward < 0.45) continue;
+    if (match.score < myPrefs.minScore) continue;
+    const live = Boolean(m.status && new Date(m.status.until) > now && m.status.mode !== "heads-down");
+    if (myPrefs.openNowOnly && !live) continue;
+    const zoneId = theirPrefs.showZone && m.zone ? m.zone : "_venue";
+    const anchor = zoneId === "_venue" ? null : zoneAnchor(focus, zoneId);
+    const center = anchor ?? focus.geo!;
+    const spread = anchor ? PRIVACY.jitterMeters : PRIVACY.jitterMeters * 3;
+    const a = hash01(`${me.id}|${p.id}|${bucket}|a`) * Math.PI * 2;
+    const r = Math.sqrt(hash01(`${me.id}|${p.id}|${bucket}|r`)) * spread;
+    const pos = offset(center.lat, center.lng, Math.cos(a) * r, Math.sin(a) * r);
+    const mode = m.status?.mode;
+    placed.push({
+      profile: pub(db, me, p),
+      score: match.score,
+      reasons: match.reasons.slice(0, 2).map((x) => x.text),
+      lat: pos.lat,
+      lng: pos.lng,
+      zoneId,
+      zoneName: focus.zones.find((z) => z.id === zoneId)?.name,
+      live,
+      liveLabel: live ? (mode === "quick-chat" ? "Open to chat" : mode === "mentoring" ? "Mentoring" : "Teaming up") : undefined,
+      hereNow: match.hereNow ?? false,
+      requestState: requestState(db, me.id, p.id),
+    });
+  }
+
+  // k-anonymity: small groups become an anonymous crowd bubble (no faces, no names).
+  const byZone = new Map<string, typeof placed>();
+  for (const x of placed) byZone.set(x.zoneId, [...(byZone.get(x.zoneId) ?? []), x]);
+  const people: MapPerson[] = [];
+  const crowds: { lat: number; lng: number; count: number; zoneName?: string }[] = [];
+  for (const [zoneId, list] of byZone) {
+    if (list.length >= PRIVACY.minCrowd) {
+      people.push(...list.map(({ zoneId: _z, ...rest }) => rest));
+    } else {
+      const anchor = (zoneId !== "_venue" && zoneAnchor(focus, zoneId)) || focus.geo!;
+      crowds.push({ lat: anchor.lat, lng: anchor.lng, count: list.length, zoneName: focus.zones.find((z) => z.id === zoneId)?.name });
+    }
+  }
+  people.sort((a, b) => b.score - a.score);
+  return {
+    ...base,
+    people,
+    crowds,
+    me: myPrefs.ghostMode ? { visible: false, reason: "Ghost mode is on — nobody sees you on the map." } : { visible: true, reason: "Others see you near your zone, never your exact spot." },
+  };
 }
 
 /** Events as clients may see them: the venue check-in code never leaves the server. */

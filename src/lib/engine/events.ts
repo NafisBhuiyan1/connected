@@ -4,6 +4,19 @@ import { interestLabel, ROLE_BY_ID, ROLES, roleLabel } from "../ontology";
 import type { ConnectedEvent, Profile, Team } from "../types";
 import { interestSimilarity, roleCoverage, scoreCandidate, type MatchContext, type Need } from "./match";
 
+type Kind = ConnectedEvent["kind"];
+const KIND_FIT: Partial<Record<string, Partial<Record<Kind, number>>>> = {
+  "hackathon-team": { hackathon: 1, workshop: 0.5, meetup: 0.4 },
+  project: { hackathon: 0.9, workshop: 0.6, meetup: 0.5 },
+  cofounder: { pitch: 1, hackathon: 0.8, meetup: 0.7, conference: 0.6 },
+  "mentorship-get": { meetup: 0.8, "career-fair": 0.8, conference: 0.7, workshop: 0.6 },
+  internship: { "career-fair": 1, meetup: 0.6, conference: 0.6 },
+  hiring: { "career-fair": 1, hackathon: 0.7 },
+  research: { seminar: 1, conference: 0.7, workshop: 0.5 },
+  "quick-chat": { meetup: 0.9, conference: 0.7 },
+  "mentorship-give": { hackathon: 0.8, meetup: 0.7, "career-fair": 0.6 },
+};
+
 export interface EventRecommendation {
   event: ConnectedEvent;
   score: number; // 0-100
@@ -46,7 +59,10 @@ export function recommendEvents(
       const live = new Date(event.start) <= ctx.now && new Date(event.end) >= ctx.now;
       const timing = live ? 1 : days <= 7 ? 0.9 : days <= 21 ? 0.6 : 0.3;
 
-      const score = Math.round(100 * (0.35 * topic.score + 0.5 * peopleValue + 0.15 * timing));
+      // Does this *kind* of event serve what you're trying to do? (a hackathon for team-building, a career fair for internships…)
+      const kindFit = Math.max(0, ...need.kinds.map((k) => KIND_FIT[k]?.[event.kind] ?? 0.3));
+
+      const score = Math.round(100 * (0.25 * topic.score + 0.45 * peopleValue + 0.1 * timing + 0.2 * kindFit));
 
       const reasons: string[] = [];
       if (strong.length) reasons.push(`${strong.length} ${strong.length === 1 ? "person" : "people"} who fit your goal ${strong.length === 1 ? "is" : "are"} opted in to networking here.`);

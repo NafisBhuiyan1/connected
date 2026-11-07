@@ -226,7 +226,7 @@ function Builder() {
               <option value={2}>Team of 2</option>
               <option value={3}>Team of 3</option>
               <option value={4}>Team of 4</option>
-              <option value={5}>Team of 5</option>
+              
             </Select>
             <span className="hidden text-[12px] text-muted lg:inline">{ai ? "Claude + optimizer" : "Rules engine + optimizer"}</span>
           </div>

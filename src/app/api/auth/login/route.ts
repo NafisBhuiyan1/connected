@@ -11,7 +11,7 @@ const Input = z.object({ email: z.string().trim().toLowerCase().email("Enter a v
 
 // Naive in-memory throttle: 8 failed attempts per email per 10 minutes.
 const g = globalThis as unknown as { __loginFails?: Map<string, number[]> };
-const fails = (g.__loginFails ??= new Map());
+const fails: Map<string, number[]> = (g.__loginFails ??= new Map<string, number[]>());
 
 export const POST = handle(async (req: Request) => {
   const { email, password } = await body(req, Input);

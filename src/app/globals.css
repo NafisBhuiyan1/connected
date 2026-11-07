@@ -213,3 +213,276 @@ body {
   background: #0d0d16;
   color: #f3f1ea;
 }
+
+/* ---------- Glass surfaces (map overlays, futuristic UI) ---------- */
+.glass {
+  background: rgba(14, 13, 34, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.6);
+}
+.glass-strong {
+  background: linear-gradient(160deg, rgba(30, 26, 72, 0.88), rgba(11, 11, 30, 0.9));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(18px) saturate(1.5);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  box-shadow: 0 20px 50px -18px rgba(40, 20, 140, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* ---------- Live map markers ---------- */
+
+.cx-vignette {
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(7, 7, 23, 0.55) 100%),
+    linear-gradient(to bottom, rgba(7, 7, 23, 0.35), transparent 18%, transparent 70%, rgba(7, 7, 23, 0.7));
+}
+
+.cx-radar {
+  width: 120px;
+  height: 120px;
+  border-radius: 9999px;
+  border: 1px solid rgba(139, 108, 255, 0.4);
+  background: conic-gradient(from 0deg, rgba(139, 108, 255, 0.45), transparent 30%);
+  animation: cx-spin 1.6s linear infinite;
+  box-shadow: 0 0 60px rgba(99, 96, 240, 0.35);
+}
+@keyframes cx-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Event "towers" — beacons like a game map */
+.cx-tower {
+  --s: 44px;
+  position: relative;
+  width: var(--s);
+  height: calc(var(--s) * 1.9);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+  filter: drop-shadow(0 6px 16px rgba(91, 63, 255, 0.45));
+}
+.cx-tower-beam {
+  position: absolute;
+  bottom: calc(var(--s) * 0.45);
+  left: 50%;
+  width: 6px;
+  height: calc(var(--s) * 1.25);
+  transform: translateX(-50%);
+  border-radius: 9999px;
+  background: linear-gradient(to top, rgba(155, 107, 255, 0.95), rgba(155, 107, 255, 0));
+  opacity: 0.7;
+}
+.cx-tower-core {
+  position: relative;
+  z-index: 2;
+  width: var(--s);
+  height: var(--s);
+  margin-bottom: calc(var(--s) * 0.45);
+  border-radius: 14px;
+  transform: rotate(45deg);
+  display: grid;
+  place-items: center;
+  color: white;
+  background: linear-gradient(135deg, #5145e0, #9b6bff 60%, #e879f9);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 0 4px rgba(155, 107, 255, 0.25), 0 0 24px rgba(155, 107, 255, 0.8);
+  transition: transform 0.2s;
+}
+.cx-tower-core svg {
+  width: 46%;
+  height: 46%;
+  transform: rotate(-45deg);
+}
+.cx-tower:hover .cx-tower-core,
+.cx-tower.is-focus .cx-tower-core {
+  transform: rotate(45deg) scale(1.12);
+}
+.cx-tower-ring {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: calc(var(--s) * 1.4);
+  height: calc(var(--s) * 0.5);
+  transform: translateX(-50%);
+  border-radius: 50%;
+  border: 2px solid rgba(155, 107, 255, 0.8);
+  background: radial-gradient(ellipse, rgba(155, 107, 255, 0.35), transparent 70%);
+}
+.cx-tower.is-live .cx-tower-ring {
+  animation: cx-ring 1.8s ease-out infinite;
+  border-color: rgba(52, 211, 153, 0.9);
+}
+.cx-tower.is-live .cx-tower-core {
+  background: linear-gradient(135deg, #059669, #34d399 55%, #a3e635);
+  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.25), 0 0 26px rgba(52, 211, 153, 0.85);
+}
+.cx-tower.is-live .cx-tower-beam {
+  background: linear-gradient(to top, rgba(52, 211, 153, 0.95), rgba(52, 211, 153, 0));
+}
+.cx-tower-count {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  right: -6px;
+  min-width: 22px;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: #0b0b1e;
+  color: #f3f1ea;
+  font: 600 11px/18px var(--font-sans);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+@keyframes cx-ring {
+  0% {
+    transform: translateX(-50%) scale(0.7);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-50%) scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* People — face bubbles that pop in */
+.cx-pin {
+  --ring: linear-gradient(135deg, #8b8fb8, #5d6087);
+  position: relative;
+  width: 46px;
+  height: 46px;
+  padding: 3px;
+  border-radius: 9999px;
+  border: 0;
+  cursor: pointer;
+  background: var(--ring);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+  animation: cx-pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  transition: transform 0.18s;
+}
+.cx-pin.t1 {
+  --ring: conic-gradient(from 210deg, #6360f0, #9b6bff, #e879f9, #22d3ee, #6360f0);
+  width: 54px;
+  height: 54px;
+  box-shadow: 0 0 22px rgba(155, 107, 255, 0.75), 0 8px 22px rgba(0, 0, 0, 0.45);
+}
+.cx-pin.t2 {
+  --ring: linear-gradient(135deg, #7a5af8, #5145e0);
+  width: 48px;
+  height: 48px;
+}
+.cx-pin:hover,
+.cx-pin.is-selected {
+  transform: scale(1.18) translateY(-4px);
+  z-index: 5;
+}
+.cx-pin.is-selected {
+  outline: 3px solid #f3f1ea;
+  outline-offset: 2px;
+}
+.cx-pin img {
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  display: block;
+  background: #fff;
+}
+.cx-pin-score {
+  position: absolute;
+  bottom: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0 6px;
+  border-radius: 9999px;
+  background: #0b0b1e;
+  color: #f3f1ea;
+  font: 700 10px/16px var(--font-sans);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+.cx-pin-here {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: #10b981;
+  border: 2px solid #0b0b1e;
+}
+.cx-pin-pulse {
+  position: absolute;
+  inset: -6px;
+  border-radius: 9999px;
+  border: 2px solid rgba(52, 211, 153, 0.85);
+  opacity: 0;
+}
+.cx-pin.is-live .cx-pin-pulse {
+  animation: cx-pulse 2s ease-out infinite;
+}
+@keyframes cx-pulse {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+@keyframes cx-pop {
+  0% {
+    transform: scale(0) translateY(14px);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Anonymous crowd (k-anonymity: small groups never show faces) */
+.cx-crowd {
+  width: 64px;
+  height: 64px;
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle, rgba(148, 163, 255, 0.45), rgba(148, 163, 255, 0.05) 70%);
+  backdrop-filter: blur(3px);
+  border: 1px dashed rgba(200, 205, 255, 0.5);
+}
+.cx-crowd span {
+  font: 700 12px/1 var(--font-sans);
+  color: #e0e3ff;
+}
+
+/* You (device-only position) */
+.cx-me {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #22d3ee;
+  border: 3px solid white;
+  box-shadow: 0 0 0 8px rgba(34, 211, 238, 0.25), 0 0 24px rgba(34, 211, 238, 0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cx-pin,
+  .cx-tower.is-live .cx-tower-ring,
+  .cx-pin.is-live .cx-pin-pulse,
+  .cx-radar {
+    animation: none;
+  }
+}
+
+.maplibregl-ctrl-attrib {
+  background: rgba(7, 7, 23, 0.6) !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+.maplibregl-ctrl-attrib a {
+  color: rgba(255, 255, 255, 0.75) !important;
+}

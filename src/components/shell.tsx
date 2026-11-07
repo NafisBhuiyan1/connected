@@ -9,9 +9,11 @@ import {
   Flag,
   Home,
   LogOut,
+  MapPinned,
   Network,
   Search,
   Settings2,
+  ShieldCheck,
   UserRound,
   Users,
   Wand2,
@@ -26,7 +28,7 @@ import { Avatar, Badge, Button, cx } from "./ui";
 
 const TOP_NAV = [
   { href: "/home", label: "Home", icon: Home },
-  { href: "/discover", label: "Discover", icon: Compass },
+  { href: "/map", label: "Nearby", icon: MapPinned },
   { href: "/build", label: "Build", icon: Wand2, accent: true },
   { href: "/events", label: "Events", icon: CalendarDays },
   { href: "/connections", label: "Network", icon: Users, badge: true },
@@ -34,7 +36,7 @@ const TOP_NAV = [
 
 const MOBILE_TABS = [
   { href: "/home", label: "Home", icon: Home },
-  { href: "/discover", label: "Discover", icon: Compass },
+  { href: "/map", label: "Nearby", icon: MapPinned },
   { href: "/build", label: "Build", icon: Wand2, fab: true },
   { href: "/events", label: "Events", icon: CalendarDays },
   { href: "/connections", label: "Network", icon: Users, badge: true },
@@ -266,6 +268,8 @@ function MeMenu({ compact }: { compact?: boolean }) {
   if (!me) return null;
   const items = [
     { href: "/profile", label: "My profile", icon: UserRound },
+    { href: "/preferences", label: "Preferences & safety", icon: ShieldCheck },
+    { href: "/discover", label: "Discover people", icon: Compass },
     { href: "/missions", label: "Missions", icon: Flag },
     { href: "/graph", label: "Opportunity graph", icon: Network },
     ...(demoMode ? [{ href: "/demo", label: "Demo control room", icon: Settings2 }] : []),

@@ -1,5 +1,7 @@
 "use client";
 
+import { createAvatar } from "@dicebear/core";
+import { notionists } from "@dicebear/collection";
 import { clsx } from "clsx";
 import { AnimatePresence, motion } from "motion/react";
 import { Loader2, X } from "lucide-react";
@@ -7,6 +9,32 @@ import Link from "next/link";
 import { forwardRef, useEffect } from "react";
 
 export const cx = clsx;
+
+// ---------- Generated faces (DiceBear "notionists", rendered locally — no network, no real photos) ----------
+
+const faceCache = new Map<string, string>();
+
+function hueToHex(h: number, s = 0.75, l = 0.86): string {
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    const c = l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    return Math.round(c * 255)
+      .toString(16)
+      .padStart(2, "0");
+  };
+  return `${f(0)}${f(8)}${f(4)}`;
+}
+
+export function faceUri(seed: string, hue = 240): string {
+  const key = `${seed}|${hue}`;
+  let uri = faceCache.get(key);
+  if (!uri) {
+    uri = createAvatar(notionists, { seed, backgroundColor: [hueToHex(hue)], radius: 50 }).toDataUri();
+    faceCache.set(key, uri);
+  }
+  return uri;
+}
 
 // ---------- Button ----------
 
@@ -186,12 +214,14 @@ export function Avatar({
   size = 40,
   live,
   className,
+  initialsOnly,
 }: {
   name: string;
   hue?: number;
   size?: number;
   live?: boolean;
   className?: string;
+  initialsOnly?: boolean;
 }) {
   const initials = name
     .replace(/^Dr\.\s+/, "")
@@ -203,15 +233,20 @@ export function Avatar({
     .toUpperCase();
   return (
     <span className={cx("relative inline-flex shrink-0", className)} style={{ width: size, height: size }}>
-      <span
-        className="inline-flex size-full items-center justify-center rounded-full font-semibold text-white ring-2 ring-white"
-        style={{
-          background: `linear-gradient(135deg, hsl(${hue} 70% 58%), hsl(${(hue + 40) % 360} 72% 48%))`,
-          fontSize: Math.max(10, size * 0.36),
-        }}
-      >
-        {initials || "?"}
-      </span>
+      {initialsOnly ? (
+        <span
+          className="inline-flex size-full items-center justify-center rounded-full font-semibold text-white ring-2 ring-white"
+          style={{
+            background: `linear-gradient(135deg, hsl(${hue} 70% 58%), hsl(${(hue + 40) % 360} 72% 48%))`,
+            fontSize: Math.max(10, size * 0.36),
+          }}
+        >
+          {initials || "?"}
+        </span>
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={faceUri(name, hue)} alt="" width={size} height={size} className="size-full rounded-full ring-2 ring-white" draggable={false} />
+      )}
       {live ? (
         <span className="absolute right-0 bottom-0 flex size-3">
           <span className="absolute inline-flex size-full animate-pulse-ring rounded-full bg-emerald-400" />

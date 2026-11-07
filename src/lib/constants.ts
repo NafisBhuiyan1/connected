@@ -1,6 +1,31 @@
 // Small constants safe to import from client components (no seed data).
 
+import type { Prefs } from "./types";
+
 export const CROWNHACKS_ID = "ev_crownhacks";
+
+export const DEFAULT_PREFS: Prefs = {
+  ghostMode: false,
+  mapAudience: "event",
+  showZone: true,
+  minScore: 0,
+  openNowOnly: false,
+  radiusMiles: 15,
+  sounds: true,
+  viewTransparency: true,
+};
+
+/** Anti-stalking parameters for the live map (also shown to users on the preferences page). */
+export const PRIVACY = {
+  /** Every pin is offset by up to this many meters, differently for every viewer. */
+  jitterMeters: 28,
+  /** Offsets re-randomize on this cadence, so pins can't be averaged over time to find someone. */
+  refreshMinutes: 15,
+  /** Zones with fewer visible people than this are shown as an anonymous crowd, not faces. */
+  minCrowd: 3,
+  /** Opening the same profile more than this many times an hour is blocked as stalking-like behaviour. */
+  maxViewsPerHour: 8,
+};
 
 export const CROWNHACKS_ZONE_OPTIONS = [
   { id: "z_mixer", name: "Team-formation mixer" },

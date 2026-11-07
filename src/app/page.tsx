@@ -122,7 +122,7 @@ export default async function Landing() {
           </Reveal>
           <div className="mt-14 grid gap-px overflow-hidden border border-white/10 bg-white/10 sm:grid-cols-3">
             {[
-              { k: "95/96", v: "teams provably optimal" },
+              { k: "4", v: "people per team, including you" },
               { k: "54", v: "skills in the ontology" },
               { k: "0", v: "GPS pins, ever" },
             ].map((s, i) => (
