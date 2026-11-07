@@ -889,7 +889,7 @@ export function home(me: Profile) {
     useful: reqs.filter((r) => r.outcomes?.[me.id] === "useful").length,
     teamInvites: db.teams.filter((t) => t.members.some((m) => m.userId === me.id && m.status === "invited")).length,
   };
-  return { me, activeMission: active, matches, radar: radar(me), events: evs.events.slice(0, 3), eventPeople: evs.people, stats, liveEventId: eventId ?? null };
+  return { me, activeMission: active, matches, radar: radar(me), events: evs.events.slice(0, 10), eventPeople: evs.people, stats, liveEventId: eventId ?? null };
 }
 
 export interface GraphNode {
