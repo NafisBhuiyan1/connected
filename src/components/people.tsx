@@ -22,6 +22,7 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { api, firstName, fmtTime } from "@/lib/client";
+import { play } from "@/lib/sfx";
 import type { MatchResult, PublicProfile, ReasonKind, ScoreBreakdown } from "@/lib/types";
 import { useToast } from "./toast";
 import { Avatar, Badge, Button, cx, DemoTag, Field, Modal, ScoreRing, Spinner, Textarea } from "./ui";
@@ -304,6 +305,7 @@ export function ConnectDialog({
     setErr(null);
     try {
       await api("/api/requests", { body: { toId: person.id, ask, message: message || ask, eventId, missionId } });
+      play("send");
       toast({ tone: "success", title: `Request sent to ${name}`, body: "You'll get a notification when they reply." });
       setAsk("");
       setMessage("");
@@ -394,6 +396,7 @@ export function QuietInterestButton({ personId, name, sent: initial, onMutual }:
       const r = await api<{ mutual: boolean }>("/api/interest", { body: { toId: personId } });
       setSent(true);
       if (r.mutual) {
+        play("match");
         toast({ tone: "success", title: `It's mutual with ${firstName(name)}! 🎉`, body: "You both wanted to meet — you're now connected." });
         onMutual?.();
       } else toast({ tone: "info", title: "Quiet interest saved", body: `${firstName(name)} won't be told unless they also want to meet you.` });

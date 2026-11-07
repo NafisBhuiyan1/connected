@@ -9,6 +9,7 @@ import { useSession } from "@/components/session";
 import { useToast } from "@/components/toast";
 import { Avatar, Badge, Button, Card, cx, DemoTag, Empty, ErrorBox, Skeleton } from "@/components/ui";
 import { api, firstName, timeAgo, useApi } from "@/lib/client";
+import { play } from "@/lib/sfx";
 import { ROLE_BY_ID } from "@/lib/ontology";
 import type { Message, PublicProfile, Team } from "@/lib/types";
 
@@ -55,6 +56,7 @@ export default function TeamRoom() {
     setBusy(action);
     try {
       await api(`/api/teams/${id}`, { body: { action } });
+      if (action === "accept") play("success");
       toast({ tone: action === "accept" ? "success" : "info", title: action === "accept" ? "You joined the team" : "You passed on this team" });
       await reload();
     } catch (e) {

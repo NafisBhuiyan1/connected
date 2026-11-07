@@ -150,9 +150,9 @@ export function LocationCheckIn({
   }
 
   return (
-    <div className="rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/80 to-violet-soft/60 p-3.5">
+    <div className="rounded-2xl border border-violet-400/25 bg-gradient-to-br from-[#1d1a4a] to-[#140f30] p-3.5 shadow-[0_0_30px_-12px_rgba(139,92,246,0.6)]">
       <div className="flex items-start gap-3">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white text-brand-600 shadow-sm">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/20 text-violet-200">
           <LocateFixed className="size-4.5" />
         </span>
         <div className="min-w-0 flex-1">

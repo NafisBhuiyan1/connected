@@ -109,7 +109,7 @@ export default function HomePage() {
               placeholder="Your idea → your team"
               className="h-10 min-w-0 flex-1 bg-transparent text-[15px] text-white outline-none placeholder:text-white/45"
             />
-            <button className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-white px-4 text-[13.5px] font-semibold text-ink transition-transform active:scale-95">
+            <button className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-white px-4 text-[13.5px] font-semibold text-[#0b0b1e] transition-transform active:scale-95">
               Build <ArrowRight className="size-3.5" />
             </button>
           </form>

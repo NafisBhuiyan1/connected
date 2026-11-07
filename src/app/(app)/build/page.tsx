@@ -350,7 +350,7 @@ function Interpretation({ plan, onChangeRoles }: { plan: PlanResponse; onChangeR
             <span key={r.roleId} title={r.why} className={cx("group inline-flex items-center gap-1.5 rounded-full border py-1 pr-1.5 pl-3 text-[13px] font-medium", r.weight >= 1.1 ? "border-brand-200 bg-brand-50 text-brand-700" : "border-line bg-surface text-ink-2")}>
               {ROLE_BY_ID[r.roleId]?.label ?? r.roleId}
               {r.weight >= 1.1 ? <span className="text-[10.5px] font-semibold text-brand-500">asked</span> : r.weight < 0.7 ? <span className="text-[10.5px] text-faint">nice-to-have</span> : null}
-              <button aria-label={`Remove ${r.roleId}`} onClick={() => onChangeRoles(roles.filter((x) => x.roleId !== r.roleId))} className="rounded-full p-0.5 text-faint hover:bg-white hover:text-ink">
+              <button aria-label={`Remove ${r.roleId}`} onClick={() => onChangeRoles(roles.filter((x) => x.roleId !== r.roleId))} className="rounded-full p-0.5 text-faint hover:bg-white/15 hover:text-ink">
                 <X className="size-3" />
               </button>
             </span>

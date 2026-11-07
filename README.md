@@ -4,6 +4,34 @@
 
 > LinkedIn tells you who people are. Connected tells you who to build with.
 
+## Try it
+
+- **Demo login:** `demo@connected.app` / `crownhacks` (fictional "Riley Park"), or create your own account at `/onboarding`.
+- **Venue check-in code** (when GPS is unavailable): `CROWN26`.
+
+## Nearby map + anti-stalking (`/map`, `/preferences`)
+
+A Snapchat-style live map of the event you're at:
+- a neon 3D city (MapLibre + OpenFreeMap tiles)
+- event "towers" sized by attendance, glowing green when live
+- illustrated face bubbles that pop in around you, ringed by compatibility
+- a swipeable card sheet with one-tap Connect
+
+Safety is built into the backend (`liveMap()` in `services.ts`, covered by `tests/privacy.test.ts`):
+
+| Protection | How |
+|---|---|
+| No GPS, ever | Pins are zone anchors. Your own position (the "locate me" button) never leaves your device. |
+| Can't be triangulated | Each pin is offset up to ±28 m, differently for every viewer. |
+| Can't be tracked over time | Offsets reshuffle every 15 minutes. |
+| Small groups stay anonymous | Zones with fewer than 3 visible people show as a faceless crowd bubble (k-anonymity). |
+| You choose your audience | Everyone at the event, or only people you'd be a good match for. |
+| Instant invisibility | Ghost mode removes you from the map and event lists immediately. |
+| Reciprocity | You must opt in to an event yourself before seeing anyone, and only while it's live. |
+| Anti-stalking rate limit | Opening the same profile more than 8 times an hour is blocked. Rapid refreshes count once. |
+| Transparency | "Who viewed you" (24h), but only if you share your own views too. |
+| Blocking | Works both ways. Unblock from Preferences. |
+
 ## What works (end to end)
 
 | Flow | What happens |

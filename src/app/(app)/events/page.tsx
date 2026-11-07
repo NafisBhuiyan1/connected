@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import { ArrowRight, CalendarDays, CheckCircle2, MapPin, Radio, Users } from "lucide-react";
+import { ArrowRight, Briefcase, CalendarDays, CheckCircle2, GraduationCap, Landmark, MapPin, Mic, Radio, Users, Wrench, Zap } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { fmtDistance, haversineM, NearMeButton } from "@/components/location";
@@ -159,6 +159,36 @@ function FeaturedEvent({ rec, people, distance }: { rec: EventRecommendation; pe
   );
 }
 
+const COVER: Record<ConnectedEvent["kind"], { from: string; to: string; icon: React.ComponentType<{ className?: string }> }> = {
+  hackathon: { from: "#4c1d95", to: "#db2777", icon: Zap },
+  "career-fair": { from: "#0c4a6e", to: "#0891b2", icon: Briefcase },
+  pitch: { from: "#7c2d12", to: "#f59e0b", icon: Mic },
+  meetup: { from: "#312e81", to: "#7c3aed", icon: Users },
+  workshop: { from: "#064e3b", to: "#10b981", icon: Wrench },
+  conference: { from: "#1e1b4b", to: "#6366f1", icon: Landmark },
+  seminar: { from: "#3b0764", to: "#a855f7", icon: GraduationCap },
+};
+
+function EventCover({ kind, start, live, attendees }: { kind: ConnectedEvent["kind"]; start: string; live: boolean; attendees: number }) {
+  const c = COVER[kind];
+  const d = new Date(start);
+  return (
+    <div className="relative -mx-5 -mt-5 mb-4 h-32 overflow-hidden" style={{ background: `linear-gradient(135deg, ${c.from}, ${c.to})` }}>
+      <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.5) 1px, transparent 1px)", backgroundSize: "14px 14px" }} />
+      <div className="absolute -right-6 -bottom-8 size-36 rounded-full bg-white/15 blur-2xl" />
+      <c.icon className="absolute right-5 bottom-4 size-14 text-white/85 drop-shadow-[0_0_18px_rgba(255,255,255,0.6)]" />
+      <div className="absolute top-3 left-4 flex flex-col items-center rounded-xl bg-black/30 px-2.5 py-1 text-white backdrop-blur">
+        <span className="text-[10px] font-semibold tracking-wide uppercase">{d.toLocaleDateString("en-US", { month: "short" })}</span>
+        <span className="text-[20px] leading-none font-bold">{d.getDate()}</span>
+      </div>
+      <div className="absolute bottom-3 left-4 flex items-center gap-1.5 text-[12px] font-medium text-white/90">
+        {live ? <span className="size-2 rounded-full bg-emerald-300 shadow-[0_0_8px_#6ee7b7]" /> : null}
+        {attendees} going
+      </div>
+    </div>
+  );
+}
+
 function EventCard({ rec, people, index, distance }: { rec: EventRecommendation; people: Record<string, PublicProfile>; index: number; distance?: number }) {
   const ev = rec.event;
   const top = rec.topPeople.map((t) => people[t.userId]).filter(Boolean);
@@ -166,7 +196,8 @@ function EventCard({ rec, people, index, distance }: { rec: EventRecommendation;
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: Math.min(0.4, index * 0.05) }}>
       <Link href={`/events/${ev.id}`} className="block h-full">
-        <Card className="card-hover flex h-full flex-col p-5">
+        <Card className="card-hover flex h-full flex-col overflow-hidden p-5">
+          <EventCover kind={ev.kind} start={ev.start} live={rec.live} attendees={rec.attendeeCount} />
           <div className="flex items-start justify-between gap-3">
             <div className="flex flex-wrap items-center gap-1.5">
               <Badge tone="brand">{KIND_LABEL[ev.kind]}</Badge>

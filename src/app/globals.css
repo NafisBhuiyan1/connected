@@ -214,6 +214,138 @@ body {
   color: #f3f1ea;
 }
 
+/* ---------- App night theme (futuristic) ---------- */
+.app-night {
+  background-color: #07071a;
+  color-scheme: dark;
+  position: relative;
+  isolation: isolate;
+}
+.app-night::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 520px at 12% -8%, rgba(99, 96, 240, 0.22), transparent 60%),
+    radial-gradient(700px 480px at 92% 6%, rgba(232, 121, 249, 0.12), transparent 60%),
+    radial-gradient(800px 600px at 60% 110%, rgba(34, 211, 238, 0.1), transparent 60%);
+  animation: cx-aurora 18s ease-in-out infinite alternate;
+}
+.app-night::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse at 50% 0%, black, transparent 70%);
+}
+@keyframes cx-aurora {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate3d(-2%, 2%, 0) scale(1.08);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-night::before {
+    animation: none;
+  }
+}
+.app-night .bg-surface {
+  background-color: #11112a;
+}
+.app-night .bg-canvas {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+.app-night .card {
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.025));
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 48px -28px rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(10px);
+}
+.app-night .card-hover:hover {
+  border-color: rgba(155, 107, 255, 0.45);
+  box-shadow: 0 0 0 1px rgba(155, 107, 255, 0.2), 0 24px 60px -24px rgba(91, 63, 255, 0.55);
+}
+.app-night [role="dialog"] {
+  background: linear-gradient(165deg, #1a1840, #0f0e26);
+}
+.app-night .bg-ink {
+  background-color: #100f2a;
+}
+.app-night .text-brand-600,
+.app-night .text-brand-500 {
+  color: #a5b4fc;
+}
+.app-night .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.14);
+}
+.app-night .text-emerald-600,
+.app-night .text-emerald-700,
+.app-night .text-emerald-800,
+.app-night .text-emerald-900 {
+  color: #6ee7b7;
+}
+.app-night .bg-amber-50,
+.app-night .bg-amber-50\/60,
+.app-night .bg-amber-50\/70 {
+  background-color: rgba(245, 158, 11, 0.13);
+}
+.app-night .text-amber-800,
+.app-night .text-amber-900 {
+  color: #fcd34d;
+}
+.app-night .bg-rose-50 {
+  background-color: rgba(244, 63, 94, 0.14);
+}
+.app-night .text-rose-600,
+.app-night .text-rose-700,
+.app-night .text-rose-800 {
+  color: #fda4af;
+}
+.app-night .bg-sky-50 {
+  background-color: rgba(14, 165, 233, 0.14);
+}
+.app-night .text-sky-600,
+.app-night .text-sky-700 {
+  color: #7dd3fc;
+}
+.app-night .bg-violet-soft {
+  background-color: rgba(139, 92, 246, 0.16);
+}
+.app-night .text-violet-600,
+.app-night .text-violet-700 {
+  color: #c4b5fd;
+}
+.app-night .bg-brand-50\/40,
+.app-night .bg-brand-50\/50,
+.app-night .bg-brand-50\/60 {
+  background-color: rgba(99, 96, 240, 0.16);
+}
+.app-night [class*="border-emerald-1"],
+.app-night [class*="border-amber-1"],
+.app-night [class*="border-rose-1"],
+.app-night [class*="border-sky-1"],
+.app-night [class*="border-violet-1"],
+.app-night [class*="border-brand-1"] {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+.app-night .skeleton {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 37%, rgba(255, 255, 255, 0.05) 63%);
+  background-size: 400% 100%;
+}
+.app-night .ring-white {
+  --tw-ring-color: #11112a;
+}
+
 /* ---------- Glass surfaces (map overlays, futuristic UI) ---------- */
 .glass {
   background: rgba(14, 13, 34, 0.62);
