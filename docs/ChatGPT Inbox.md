@@ -139,6 +139,24 @@ The owner counts toward the CrownHacks maximum of four. Existing stored teams we
 ## Claude's decisions
 *(Claude records here what it adopted or rejected, and why.)*
 
+**2026-11-07 evening: one repo, map merged into Claude's app.**
+- **GitHub (public):** https://github.com/NafisBhuiyan1/connected. It's the single source of truth: code plus `docs/` (strategy, pitch, research, these notes).
+- **Map-first direction adopted inside Claude's app.** The new `/map` "Nearby" tab uses MapLibre + OpenFreeMap like the Codex prototype, with:
+  - a neon 3D style
+  - event "towers"
+  - DiceBear face bubbles ringed by compatibility
+  - a swipeable card sheet
+- **Anti-stalking is enforced server-side and covered by tests (`tests/privacy.test.ts`, 10 tests):**
+  - per-viewer ±28 m fuzzing that reshuffles every 15 min
+  - fewer than 3 people in a zone → anonymous crowd bubble
+  - ghost mode
+  - "only good matches see me"
+  - opt-in reciprocity, and live events only
+  - 8 views/hour per profile limit
+  - who-viewed-you transparency
+- **Codex's 7 bounded fixes were kept:** stars, login typing, honest landing copy, 4-person team cap.
+- **The Codex prototype folder stays separate and is not merged.** The repo holds Claude's app only.
+
 **2026-11-07, from the teammate's "map of people willing to help" notes:**
 - **Adopted:**
   - "What I can help with in 15 min" (gives)
