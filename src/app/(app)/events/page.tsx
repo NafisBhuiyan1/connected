@@ -1,0 +1,234 @@
+"use client";
+
+import { motion } from "motion/react";
+import { ArrowRight, CalendarDays, CheckCircle2, MapPin, Radio, Users } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
+import { fmtDistance, haversineM, NearMeButton } from "@/components/location";
+import { PeopleStack } from "@/components/people";
+import { Badge, Card, cx, Empty, ErrorBox, PageHeader, Progress, Skeleton } from "@/components/ui";
+import { fmtDateTime, useApi } from "@/lib/client";
+import type { EventRecommendation } from "@/lib/engine/events";
+import type { ConnectedEvent, PublicProfile } from "@/lib/types";
+
+interface EventsResponse {
+  events: EventRecommendation[];
+  people: Record<string, PublicProfile>;
+}
+
+const KIND_LABEL: Record<ConnectedEvent["kind"], string> = {
+  hackathon: "Hackathon",
+  "career-fair": "Career fair",
+  pitch: "Pitch night",
+  meetup: "Meetup",
+  workshop: "Workshop",
+  conference: "Conference",
+  seminar: "Seminar",
+};
+
+export default function EventsPage() {
+  const { data, error, loading, reload } = useApi<EventsResponse>("/api/events");
+  const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
+  const events = data?.events ?? [];
+  const dist = (e: EventRecommendation) => (pos && e.event.geo ? haversineM(pos, e.event.geo) : undefined);
+  const featured = events.find((e) => e.live) ?? null;
+  const rest = events
+    .filter((e) => e !== featured)
+    .sort((a, b) => (pos ? (dist(a) ?? Infinity) - (dist(b) ?? Infinity) : 0));
+
+  return (
+    <div>
+      <PageHeader
+        eyebrow="Smart event discovery"
+        title="Events worth your time"
+        sub="Ranked by how much each event moves your goals forward — who's there and opted in, not just what it's about."
+        action={<NearMeButton active={Boolean(pos)} onPosition={setPos} />}
+      />
+      {pos ? <p className="-mt-3 mb-4 text-[12px] text-muted">Distances are computed on this device — your location isn&apos;t sent anywhere.</p> : null}
+
+      {error ? <ErrorBox message={error} onRetry={reload} /> : null}
+
+      {loading && !data ? (
+        <div className="space-y-4">
+          <Skeleton className="h-56 w-full rounded-3xl" />
+          <div className="grid gap-4 md:grid-cols-2">
+            <Skeleton className="h-52 w-full rounded-2xl" />
+            <Skeleton className="h-52 w-full rounded-2xl" />
+          </div>
+        </div>
+      ) : null}
+
+      {data && !events.length ? (
+        <Empty icon={<CalendarDays className="size-5" />} title="No upcoming events" body="When events are added, Connected ranks them by how many people there fit your goals." />
+      ) : null}
+
+      {featured ? <FeaturedEvent rec={featured} people={data!.people} distance={dist(featured)} /> : null}
+
+      {rest.length ? (
+        <div className="mt-6 grid gap-4 md:grid-cols-2">
+          {rest.map((rec, i) => (
+            <EventCard key={rec.event.id} rec={rec} people={data!.people} index={i} distance={dist(rec)} />
+          ))}
+        </div>
+      ) : null}
+
+      {data ? (
+        <p className="mt-6 text-[12px] text-muted">
+          Fit = 35% topic overlap with your interests + 50% how well the opted-in attendees match your goal + 15% timing. Events marked “Sample” are illustrative demo events.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function FeaturedEvent({ rec, people, distance }: { rec: EventRecommendation; people: Record<string, PublicProfile>; distance?: number }) {
+  const ev = rec.event;
+  const top = rec.topPeople.map((t) => people[t.userId]).filter(Boolean);
+  const strong = rec.topPeople.filter((t) => t.score >= 60).length;
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+      <Link href={`/events/${ev.id}`} className="group block">
+        <div className="brand-gradient relative overflow-hidden rounded-3xl p-[1.5px] shadow-[var(--shadow-lift)]">
+          <div className="relative overflow-hidden rounded-[22px] bg-surface p-5 sm:p-7">
+            <div className="brand-gradient-soft pointer-events-none absolute inset-0" />
+            <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge tone="green" icon={<Radio className="size-3" />}>
+                    Live now
+                  </Badge>
+                  <Badge tone="brand">{KIND_LABEL[ev.kind]}</Badge>
+                  {ev.isSample ? <Badge>Sample event</Badge> : null}
+                  {rec.optedIn ? (
+                    <Badge tone="violet" icon={<CheckCircle2 className="size-3" />}>
+                      You&apos;re opted in
+                    </Badge>
+                  ) : rec.joined ? (
+                    <Badge>Joined · hidden</Badge>
+                  ) : null}
+                </div>
+                <h2 className="mt-3 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">{ev.title}</h2>
+                <p className="mt-1 text-[14px] font-medium text-ink-2">{ev.host}</p>
+                <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] text-muted">
+                  <span className="inline-flex items-center gap-1.5">
+                    <CalendarDays className="size-3.5" /> {fmtDateTime(ev.start)} – {fmtDateTime(ev.end)}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <MapPin className="size-3.5" /> {ev.venue}
+                    {distance !== undefined ? <b className="font-semibold text-brand-700">· {fmtDistance(distance)}</b> : null}
+                  </span>
+                </div>
+                <p className="mt-4 max-w-2xl text-[14px] leading-relaxed text-ink-2">{ev.description}</p>
+                {rec.reasons.length ? (
+                  <ul className="mt-4 space-y-1.5">
+                    {rec.reasons.map((r) => (
+                      <li key={r} className="flex gap-2 text-[13.5px] text-ink-2">
+                        <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-brand-500" />
+                        {r}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+              <div className="w-full shrink-0 rounded-2xl border border-line bg-surface/80 p-4 backdrop-blur lg:w-72">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-[12px] font-medium text-muted">Your fit</span>
+                  <span className="text-2xl font-semibold tabular-nums text-ink">{rec.score}</span>
+                </div>
+                <Progress value={rec.score} className="mt-2" />
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  {top.length ? <PeopleStack people={top.map((p) => ({ name: p.name, hue: p.avatarHue }))} size={30} /> : <span />}
+                  <span className="text-right text-[12px] text-muted">
+                    {strong ? `${strong} strong ${strong === 1 ? "match" : "matches"}` : "Top matches"}
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center justify-between border-t border-line pt-3 text-[12.5px] text-muted">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Users className="size-3.5" /> {rec.attendeeCount} attending · {rec.optedInCount} opted in
+                  </span>
+                </div>
+                <div className="brand-gradient mt-4 flex h-10 items-center justify-center gap-2 rounded-xl text-sm font-medium text-white transition group-hover:brightness-110">
+                  Open networking space <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Link>
+    </motion.div>
+  );
+}
+
+function EventCard({ rec, people, index, distance }: { rec: EventRecommendation; people: Record<string, PublicProfile>; index: number; distance?: number }) {
+  const ev = rec.event;
+  const top = rec.topPeople.map((t) => people[t.userId]).filter(Boolean);
+  const strong = rec.topPeople.filter((t) => t.score >= 60).length;
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: Math.min(0.4, index * 0.05) }}>
+      <Link href={`/events/${ev.id}`} className="block h-full">
+        <Card className="card-hover flex h-full flex-col p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Badge tone="brand">{KIND_LABEL[ev.kind]}</Badge>
+              {rec.live ? (
+                <Badge tone="green" icon={<Radio className="size-3" />}>
+                  Live now
+                </Badge>
+              ) : null}
+              {ev.isSample ? <Badge>Sample event</Badge> : null}
+            </div>
+            {rec.optedIn ? (
+              <Badge tone="violet" icon={<CheckCircle2 className="size-3" />}>
+                Opted in
+              </Badge>
+            ) : rec.joined ? (
+              <Badge>Joined</Badge>
+            ) : null}
+          </div>
+          <h3 className="mt-3 text-[17px] font-semibold tracking-tight text-ink">{ev.title}</h3>
+          <p className="text-[13px] text-muted">{ev.host}</p>
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-muted">
+            <span className="inline-flex items-center gap-1.5">
+              <CalendarDays className="size-3.5" /> {fmtDateTime(ev.start)}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <MapPin className="size-3.5" /> {ev.venue}
+              {distance !== undefined ? <b className="font-semibold text-brand-700">· {fmtDistance(distance)}</b> : null}
+            </span>
+          </div>
+          <div className="mt-4">
+            <div className="mb-1 flex items-baseline justify-between text-[12px]">
+              <span className="font-medium text-muted">Fit for your goals</span>
+              <span className={cx("font-semibold tabular-nums", rec.score >= 60 ? "text-brand-700" : "text-ink-2")}>{rec.score}</span>
+            </div>
+            <Progress value={rec.score} />
+          </div>
+          {rec.reasons.length ? (
+            <div className="mt-4 flex-1">
+              <p className="mb-1.5 text-[11.5px] font-semibold tracking-wide text-faint uppercase">Why this event</p>
+              <ul className="space-y-1.5">
+                {rec.reasons.slice(0, 3).map((r) => (
+                  <li key={r} className="flex gap-2 text-[13px] leading-snug text-ink-2">
+                    <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-brand-500" />
+                    {r}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="mt-4 flex-1 text-[13px] text-muted">{ev.description}</p>
+          )}
+          <div className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-3">
+            <div className="flex items-center gap-2">
+              {top.length ? <PeopleStack people={top.map((p) => ({ name: p.name, hue: p.avatarHue }))} size={24} /> : null}
+              <span className="text-[12px] text-muted">{strong ? `${strong} strong ${strong === 1 ? "match" : "matches"}` : `${rec.optedInCount} opted in`}</span>
+            </div>
+            <span className="inline-flex items-center gap-1 text-[12px] text-muted">
+              <Users className="size-3.5" /> {rec.attendeeCount}
+            </span>
+          </div>
+        </Card>
+      </Link>
+    </motion.div>
+  );
+}
