@@ -1462,6 +1462,8 @@ export function updateProfile(me: Profile, patch: Partial<Profile>) {
       "lookingFor", "openTo", "introsOffered", "availability", "area", "visibility", "allowRequests", "links",
     ];
     for (const k of allowed) if (k in patch) (p as unknown as Record<string, unknown>)[k] = (patch as Record<string, unknown>)[k];
+    // Links merge (a form that only knows some networks must not wipe the others).
+    if (patch.links) p.links = { ...(me.links ?? {}), ...patch.links };
     return p;
   });
 }

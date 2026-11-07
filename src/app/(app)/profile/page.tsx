@@ -8,6 +8,7 @@ import { ProfileCover } from "@/components/people";
 import { useSession } from "@/components/session";
 import { useToast } from "@/components/toast";
 import { Avatar, Badge, Button, Card, Chip, cx, DemoTag, Field, Input, SectionTitle, Select, Textarea, Toggle } from "@/components/ui";
+import { BrandIcon, linkEntries, SocialConnect } from "@/components/social-connect";
 import { api } from "@/lib/client";
 import { COLLAB_LABELS, INTERESTS, LEVEL_LABEL, ROLES, SKILL_BY_ID, SKILLS } from "@/lib/ontology";
 import type { Availability, CollabType, Level, PersonRole, Profile, UserSkill, Visibility } from "@/lib/types";
@@ -169,13 +170,22 @@ export default function ProfilePage() {
               {me.isDemo ? <DemoTag /> : null}
             </div>
             <p className="truncate text-[15px] text-ink-2">{draft.headline || "Add a headline"}</p>
-            <p className="mt-1 text-[12.5px] text-muted">Matches only quote what you write here.</p>
+            {linkEntries(me.links).length ? (
+              <div className="mt-2.5 flex flex-wrap gap-1.5">
+                {linkEntries(me.links).map((l) => (
+                  <a key={l.key} href={l.url} target="_blank" rel="noreferrer" className="inline-flex size-8 items-center justify-center rounded-full bg-canvas text-ink-2 transition-colors hover:bg-brand-50 hover:text-brand-700" aria-label={l.key}>
+                    <BrandIcon k={l.key} className="size-4" />
+                  </a>
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
       </Card>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-5">
+          <SocialConnect onSaved={() => setTimeout(() => window.location.reload(), 700)} />
           {/* Basics */}
           <Card className="p-5 sm:p-6">
             <SectionTitle title="Basics" />

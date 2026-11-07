@@ -54,7 +54,7 @@ export interface Profile {
   area: string; // general area only — never precise location
   visibility: Visibility;
   allowRequests: boolean;
-  links?: { github?: string; linkedin?: string; portfolio?: string };
+  links?: { github?: string; linkedin?: string; portfolio?: string; instagram?: string; x?: string };
   isDemo: boolean;
   avatarHue: number;
   createdAt: string;

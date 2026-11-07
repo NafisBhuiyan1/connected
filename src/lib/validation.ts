@@ -30,7 +30,13 @@ export const ProfileInput = z.object({
   visibility: z.enum(["everyone", "events", "hidden"]).default("everyone"),
   allowRequests: z.boolean().default(true),
   links: z
-    .object({ github: z.string().url().optional().or(z.literal("")), linkedin: z.string().url().optional().or(z.literal("")), portfolio: z.string().url().optional().or(z.literal("")) })
+    .object({
+      github: z.string().url().optional().or(z.literal("")),
+      linkedin: z.string().url().optional().or(z.literal("")),
+      portfolio: z.string().url().optional().or(z.literal("")),
+      instagram: z.string().url().optional().or(z.literal("")),
+      x: z.string().url().optional().or(z.literal("")),
+    })
     .optional(),
   joinEventId: z.string().optional(),
   zone: z.string().optional(),

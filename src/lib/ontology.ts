@@ -122,7 +122,7 @@ export const INTERESTS: InterestDef[] = [
   i("quant-finance", "Quantitative finance", ["quant", "quantitative finance", "trading", "markets", "hedge fund", "stocks"], ["fintech", "data"]),
   i("healthtech", "Healthtech", ["health", "healthcare", "medical", "patients", "hospital", "clinic", "wellness", "mental health", "fitness"], ["biotech", "social-impact"]),
   i("biotech", "Biotech", ["biotech", "biology", "genomics", "drug discovery"], ["healthtech", "research"]),
-  i("edtech", "Edtech", ["education", "edtech", "learning", "students", "tutoring", "study"], ["social-impact"]),
+  i("edtech", "Edtech", ["education", "edtech", "classroom", "teachers", "tutoring", "e-learning", "online learning", "study tools"], ["social-impact"]),
   i("climate", "Climate tech", ["climate", "sustainability", "carbon", "energy", "green", "environment", "recycling"], ["social-impact", "hardware"]),
   i("social-impact", "Social impact", ["social impact", "nonprofit", "community", "accessibility", "equity", "civic", "impact"], ["edtech", "healthtech"]),
   i("design", "Design", ["design", "ux", "ui", "creative"], ["consumer"]),
