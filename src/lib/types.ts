@@ -139,6 +139,10 @@ export interface ConnectedEvent {
   /** Fallback check-in code shown on screens at the venue. Server-only — stripped from every API response. */
   checkInCode?: string;
   isSample: boolean;
+  /** Imported from a public calendar feed (.ics) rather than seeded. */
+  source?: { kind: "ics"; feed: string; uid: string; importedBy: string; importedAt: string; approximate?: boolean };
+  /** The organizer's own page for the event. */
+  link?: string;
 }
 
 export type LiveMode = "quick-chat" | "team-up" | "mentoring" | "heads-down";

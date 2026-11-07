@@ -16,6 +16,12 @@ export const DEFAULT_PREFS: Prefs = {
 };
 
 /** Anti-stalking parameters for the live map (also shown to users on the preferences page). */
+/** Real, public iCalendar feeds near CrownHacks (verified Nov 2026). */
+export const SUGGESTED_FEEDS = [
+  { name: "UNC Charlotte Events", sub: "Talks, career & campus events", url: "https://campusevents.charlotte.edu/calendar.ics" },
+  { name: "NinerEngage", sub: "Student org & club events", url: "https://ninerengage.charlotte.edu/events.ics" },
+] as const;
+
 export const PRIVACY = {
   /** Every pin is offset by up to this many meters, differently for every viewer. */
   jitterMeters: 28,

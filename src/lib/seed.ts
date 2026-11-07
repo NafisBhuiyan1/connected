@@ -53,7 +53,8 @@ const V = {
   imaginon: [35.22694, -80.837675, "ImaginOn"],
   discovery: [35.229618, -80.841197, "Discovery Place Science"],
 } as const;
-type VenueKey = keyof typeof V;
+export const VENUES = V;
+export type VenueKey = keyof typeof V;
 const venueGeo = (k: VenueKey, radiusM = 400) => ({ lat: V[k][0], lng: V[k][1], radiusM, label: V[k][2] });
 
 // Clearly-labeled sample events around Charlotte — every major type, so the map and events tab feel alive.
@@ -189,7 +190,7 @@ const CROWNHACKS_ZONES = [
   { id: "z_expo", name: "Expo tables", x: 66, y: 38, w: 32, h: 20, kind: "table" as const },
 ];
 
-function genericZones(prefix: string) {
+export function genericZones(prefix: string) {
   return [
     { id: `${prefix}_main`, name: "Main room", x: 2, y: 2, w: 60, h: 36, kind: "hall" as const },
     { id: `${prefix}_lounge`, name: "Networking lounge", x: 64, y: 2, w: 34, h: 36, kind: "lounge" as const, meetingSpot: true },

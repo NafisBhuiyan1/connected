@@ -60,6 +60,9 @@ function reseedKeepingRealUsers(old: Partial<Database> | null): Database {
   const real = old.profiles.filter((p) => !p.isDemo);
   const realIds = new Set(real.map((p) => p.id));
   fresh.profiles.push(...real);
+  // Events imported from real calendars survive demo reseeds.
+  const seededIds = new Set(fresh.events.map((e) => e.id));
+  fresh.events.push(...(old.events ?? []).filter((e) => e.source?.kind === "ics" && !seededIds.has(e.id)));
   fresh.memberships.push(...(old.memberships ?? []).filter((m) => realIds.has(m.userId)));
   fresh.missions.push(...(old.missions ?? []).filter((m) => realIds.has(m.userId)));
   fresh.accounts.push(...(old.accounts ?? []).filter((a) => realIds.has(a.userId)));

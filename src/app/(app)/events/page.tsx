@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { ArrowRight, Briefcase, CalendarDays, CheckCircle2, GraduationCap, Landmark, MapPin, Mic, Radio, Users, Wrench, Zap } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { ImportEventsButton } from "@/components/import-events";
 import { fmtDistance, haversineM, NearMeButton } from "@/components/location";
 import { PeopleStack } from "@/components/people";
 import { Badge, Card, cx, Empty, ErrorBox, PageHeader, Progress, Skeleton } from "@/components/ui";
@@ -26,10 +27,23 @@ const KIND_LABEL: Record<ConnectedEvent["kind"], string> = {
   seminar: "Seminar",
 };
 
+const KIND_PLURAL: Record<ConnectedEvent["kind"], string> = {
+  hackathon: "Hackathons",
+  "career-fair": "Career fairs",
+  pitch: "Pitch nights",
+  meetup: "Meetups",
+  workshop: "Workshops",
+  conference: "Conferences",
+  seminar: "Seminars",
+};
+
 export default function EventsPage() {
   const { data, error, loading, reload } = useApi<EventsResponse>("/api/events");
   const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
-  const events = data?.events ?? [];
+  const [kind, setKind] = useState<ConnectedEvent["kind"] | "all">("all");
+  const all = data?.events ?? [];
+  const counts = all.reduce<Partial<Record<ConnectedEvent["kind"], number>>>((acc, e) => ({ ...acc, [e.event.kind]: (acc[e.event.kind] ?? 0) + 1 }), {});
+  const events = kind === "all" ? all : all.filter((e) => e.event.kind === kind);
   const dist = (e: EventRecommendation) => (pos && e.event.geo ? haversineM(pos, e.event.geo) : undefined);
   const featured = events.find((e) => e.live) ?? null;
   const rest = events
@@ -39,12 +53,39 @@ export default function EventsPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Smart event discovery"
-        title="Events worth your time"
-        sub="Ranked by how much each event moves your goals forward — who's there and opted in, not just what it's about."
-        action={<NearMeButton active={Boolean(pos)} onPosition={setPos} />}
+        title="Events"
+        sub="Ranked by who's going — not just the topic."
+        action={
+          <div className="flex items-center gap-2">
+            <ImportEventsButton onImported={reload} />
+            <NearMeButton active={Boolean(pos)} onPosition={setPos} />
+          </div>
+        }
       />
       {pos ? <p className="-mt-3 mb-4 text-[12px] text-muted">Distances are computed on this device — your location isn&apos;t sent anywhere.</p> : null}
+
+      {all.length ? (
+        <div className="[scrollbar-width:none] -mx-4 mb-5 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
+          {(["all", ...(Object.keys(KIND_LABEL) as ConnectedEvent["kind"][]).filter((k) => counts[k])] as const).map((k) => {
+            const on = kind === k;
+            const Icon = k === "all" ? CalendarDays : COVER[k].icon;
+            return (
+              <button
+                key={k}
+                onClick={() => setKind(k)}
+                className={cx(
+                  "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-[13px] font-medium transition-colors",
+                  on ? "border-brand-600 bg-brand-600 text-white" : "border-line bg-white text-ink-2 hover:border-brand-200 hover:bg-brand-50",
+                )}
+              >
+                <Icon className="size-3.5" />
+                {k === "all" ? "All" : KIND_PLURAL[k]}
+                <span className={cx("text-[11.5px] tabular-nums", on ? "text-white/80" : "text-faint")}>{k === "all" ? all.length : counts[k]}</span>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
 
       {error ? <ErrorBox message={error} onRetry={reload} /> : null}
 
@@ -72,11 +113,7 @@ export default function EventsPage() {
         </div>
       ) : null}
 
-      {data ? (
-        <p className="mt-6 text-[12px] text-muted">
-          Fit = 35% topic overlap with your interests + 50% how well the opted-in attendees match your goal + 15% timing. Events marked “Sample” are illustrative demo events.
-        </p>
-      ) : null}
+      {data ? <p className="mt-6 text-[12px] text-muted">Fit = topic overlap + who&apos;s opted in + timing. “Sample” events are illustrative; “Imported” ones come from real calendars.</p> : null}
     </div>
   );
 }
@@ -207,6 +244,7 @@ function EventCard({ rec, people, index, distance }: { rec: EventRecommendation;
                 </Badge>
               ) : null}
               {ev.isSample ? <Badge>Sample event</Badge> : null}
+              {ev.source?.kind === "ics" ? <Badge tone="green">Imported</Badge> : null}
             </div>
             {rec.optedIn ? (
               <Badge tone="violet" icon={<CheckCircle2 className="size-3" />}>

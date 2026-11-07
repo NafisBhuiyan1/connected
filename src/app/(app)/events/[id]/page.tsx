@@ -28,7 +28,7 @@ import { Badge, Button, Card, Chip, cx, Empty, ErrorBox, Field, Input, Select, S
 import { ZoneLegend, ZoneMap, type MapPerson } from "@/components/zone-map";
 import { LocationCheckIn } from "@/components/location";
 import { EventLounge } from "@/components/event-lounge";
-import { MapPinCheck, MessageCircle } from "lucide-react";
+import { ExternalLink, MapPinCheck, MessageCircle } from "lucide-react";
 import { api, fmtDateTime, fmtTime, useApi } from "@/lib/client";
 import type { EventInsights } from "@/lib/engine/events";
 import { interestLabel } from "@/lib/ontology";
@@ -193,6 +193,7 @@ function EventHeader({ event, live, attendeeCount, optedIn }: { event: Connected
           ) : null}
           <Badge tone="brand">{KIND_LABEL[event.kind]}</Badge>
           {event.isSample ? <Badge>Sample event</Badge> : null}
+          {event.source?.kind === "ics" ? <Badge tone="green">Imported from calendar</Badge> : null}
         </div>
         <h1 className="mt-3 text-2xl font-semibold tracking-tight text-ink sm:text-[30px]">{event.title}</h1>
         <p className="mt-1 text-[14px] font-medium text-ink-2">{event.host}</p>
@@ -202,7 +203,13 @@ function EventHeader({ event, live, attendeeCount, optedIn }: { event: Connected
           </span>
           <span className="inline-flex items-center gap-1.5">
             <MapPin className="size-3.5" /> {event.venue}
+            {event.source?.approximate ? <span className="text-faint">(approx. pin)</span> : null}
           </span>
+          {event.link ? (
+            <a href={event.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 font-semibold text-brand-700 hover:underline">
+              <ExternalLink className="size-3.5" /> Event page
+            </a>
+          ) : null}
           <span className="inline-flex items-center gap-1.5">
             <Users className="size-3.5" /> {attendeeCount} attending · {optedIn} opted in to networking
           </span>
