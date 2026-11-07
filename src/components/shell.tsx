@@ -4,13 +4,14 @@ import { AnimatePresence, motion } from "motion/react";
 import {
   Bell,
   CalendarDays,
+  ChevronDown,
   Compass,
   Flag,
   Home,
   LogOut,
   Network,
   Search,
-  Sparkles,
+  Settings2,
   UserRound,
   Users,
   Wand2,
@@ -23,22 +24,20 @@ import type { Notification } from "@/lib/types";
 import { SessionProvider, useSession } from "./session";
 import { Avatar, Badge, Button, cx } from "./ui";
 
-const NAV = [
+const TOP_NAV = [
   { href: "/home", label: "Home", icon: Home },
-  { href: "/build", label: "Team Builder", icon: Wand2, accent: true },
-  { href: "/discover", label: "Discover", icon: Search },
+  { href: "/discover", label: "Discover", icon: Compass },
+  { href: "/build", label: "Build", icon: Wand2, accent: true },
   { href: "/events", label: "Events", icon: CalendarDays },
-  { href: "/missions", label: "Missions", icon: Flag },
-  { href: "/connections", label: "Connections", icon: Users, badge: "connections" as const },
-  { href: "/graph", label: "Graph", icon: Network },
-  { href: "/profile", label: "Profile", icon: UserRound },
+  { href: "/connections", label: "Network", icon: Users, badge: true },
 ];
+
 const MOBILE_TABS = [
   { href: "/home", label: "Home", icon: Home },
-  { href: "/discover", label: "Discover", icon: Search },
+  { href: "/discover", label: "Discover", icon: Compass },
   { href: "/build", label: "Build", icon: Wand2, fab: true },
   { href: "/events", label: "Events", icon: CalendarDays },
-  { href: "/connections", label: "People", icon: Users, badge: true },
+  { href: "/connections", label: "Network", icon: Users, badge: true },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -49,113 +48,94 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+function isActive(pathname: string, href: string) {
+  return pathname === href || (href !== "/home" && pathname.startsWith(href));
+}
+
 function ShellInner({ children }: { children: React.ReactNode }) {
-  const { me, loading, actingAsDemo, demoMode, ai } = useSession();
+  const { me, loading, actingAsDemo } = useSession();
   const router = useRouter();
   const pathname = usePathname();
   const notes = useApi<{ items: Notification[]; unread: number }>(me ? "/api/notifications" : null, { poll: 4000 });
   const pendingIn = notes.data?.items.filter((n) => !n.read && (n.kind === "request" || n.kind === "team-invite")).length ?? 0;
 
   useEffect(() => {
-    if (!loading && !me) router.replace("/onboarding");
+    if (!loading && !me) router.replace("/login");
   }, [loading, me, router]);
 
   if (loading || !me) {
     return (
-      <div className="flex min-h-dvh items-center justify-center">
-        <Logo />
+      <div className="flex min-h-dvh items-center justify-center bg-canvas">
+        <motion.div animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.6, repeat: Infinity }}>
+          <Logo />
+        </motion.div>
       </div>
     );
   }
 
-  return (
-    <div className={cx("min-h-dvh", actingAsDemo && "pt-10")}>
-      {actingAsDemo ? <DemoBanner name={me.name} /> : null}
-      {/* Sidebar */}
-      <aside className={cx("fixed inset-y-0 left-0 z-30 hidden w-[232px] flex-col border-r border-line bg-surface/80 px-3 py-4 backdrop-blur md:flex", actingAsDemo && "top-10")}>
-        <Link href="/home" className="mb-6 px-2">
-          <Logo />
-        </Link>
-        <nav className="flex flex-1 flex-col gap-0.5">
-          {NAV.map((n) => {
-            const active = pathname === n.href || (n.href !== "/home" && pathname.startsWith(n.href));
-            const Icon = n.icon;
-            return (
-              <Link
-                key={n.href}
-                href={n.href}
-                className={cx(
-                  "focus-ring group relative flex items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] font-medium transition-colors",
-                  active ? "bg-brand-50 text-brand-700" : "text-ink-2 hover:bg-canvas hover:text-ink",
-                )}
-              >
-                {active ? <motion.span layoutId="nav-active" className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-brand-600" /> : null}
-                <Icon className={cx("size-[18px]", active ? "text-brand-600" : "text-faint group-hover:text-ink-2")} />
-                <span className="flex-1">{n.label}</span>
-                {n.accent ? <Sparkles className="size-3.5 text-violet-500" /> : null}
-                {n.badge && pendingIn ? <span className="rounded-full bg-brand-600 px-1.5 text-[11px] font-semibold text-white">{pendingIn}</span> : null}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="mt-4 space-y-2 border-t border-line pt-4">
-          <div className="px-2 text-[11.5px] leading-snug text-muted">
-            <span className={cx("mr-1 inline-block size-1.5 rounded-full align-middle", ai ? "bg-emerald-500" : "bg-amber-400")} />
-            {ai ? "Claude is on for goals & intros" : "Rules engine (no AI key set)"}
-          </div>
-          {demoMode ? (
-            <Link href="/demo" className="block rounded-xl px-2 py-1.5 text-[12.5px] font-medium text-muted hover:bg-canvas hover:text-ink">
-              Demo control room →
-            </Link>
-          ) : null}
-          <Link href="/profile" className="flex items-center gap-2.5 rounded-xl p-2 hover:bg-canvas">
-            <Avatar name={me.name} hue={me.avatarHue} size={32} />
-            <div className="min-w-0">
-              <p className="truncate text-[13px] font-semibold text-ink">{me.name}</p>
-              <p className="truncate text-[11.5px] text-muted">{me.headline}</p>
-            </div>
-          </Link>
-        </div>
-      </aside>
+  const markRead = async () => {
+    if (notes.data?.unread) {
+      await api("/api/notifications", { method: "POST" });
+      void notes.reload();
+    }
+  };
 
-      {/* Top bar */}
-      <header className={cx("sticky top-0 z-20 border-b border-line bg-canvas/80 backdrop-blur md:ml-[232px]", actingAsDemo && "top-10")}>
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
-          <Link href="/home" className="md:hidden">
-            <Logo small />
+  return (
+    <div className={cx("min-h-dvh bg-canvas", actingAsDemo && "pt-10")}>
+      {actingAsDemo ? <DemoBanner name={me.name} /> : null}
+
+      {/* Top navigation — LinkedIn-style layout, Connected colors */}
+      <header className={cx("sticky top-0 z-30 border-b border-line/80 bg-white/85 backdrop-blur-xl", actingAsDemo && "top-10")}>
+        <div className="mx-auto flex h-[60px] max-w-6xl items-center gap-3 px-4 sm:px-6">
+          <Link href="/home" className="shrink-0" aria-label="Connected home">
+            <Logo compact />
           </Link>
-          <div className="hidden text-[13px] text-muted md:block">
-            <span className="font-medium text-ink-2">Find your people.</span> Build what&apos;s next.
-          </div>
-          <div className="flex items-center gap-0.5 sm:gap-1.5">
-            <Link href="/missions" aria-label="Missions" className="inline-flex size-9 items-center justify-center rounded-xl text-ink-2 hover:bg-surface md:hidden">
-              <Flag className="size-[18px]" />
-            </Link>
-            <Link href="/graph" aria-label="Opportunity graph" className="inline-flex size-9 items-center justify-center rounded-xl text-ink-2 hover:bg-surface md:hidden">
-              <Network className="size-[18px]" />
-            </Link>
-            <NotificationsBell notes={notes.data} onOpen={async () => {
-              if (notes.data?.unread) {
-                await api("/api/notifications", { method: "POST" });
-                void notes.reload();
-              }
-            }} />
-            <Link href="/profile" className="md:hidden">
-              <Avatar name={me.name} hue={me.avatarHue} size={32} />
-            </Link>
+          <SearchBox />
+          <nav className="ml-auto hidden h-full items-stretch md:flex">
+            {TOP_NAV.map((n) => {
+              const active = isActive(pathname, n.href);
+              const Icon = n.icon;
+              return (
+                <Link
+                  key={n.href}
+                  href={n.href}
+                  className={cx(
+                    "group relative flex w-[78px] flex-col items-center justify-center gap-0.5 text-[11.5px] font-medium transition-colors",
+                    active ? "text-ink" : "text-muted hover:text-ink",
+                  )}
+                >
+                  <span className={cx("relative flex size-7 items-center justify-center rounded-lg", n.accent && "brand-gradient text-white shadow-[0_6px_14px_-6px_rgba(81,69,224,0.7)]")}>
+                    <Icon className={cx("size-[19px]", n.accent ? "text-white" : active ? "text-brand-600" : "")} />
+                    {n.badge && pendingIn ? (
+                      <span className="absolute -top-1 -right-1.5 flex min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-white">
+                        {pendingIn}
+                      </span>
+                    ) : null}
+                  </span>
+                  {n.label}
+                  {active ? <motion.span layoutId="topnav" className="absolute inset-x-3 bottom-0 h-[2.5px] rounded-full bg-ink" /> : null}
+                </Link>
+              );
+            })}
+            <NotificationsBell notes={notes.data} onOpen={markRead} labeled />
+            <MeMenu />
+          </nav>
+          <div className="ml-auto flex items-center gap-0.5 md:hidden">
+            <NotificationsBell notes={notes.data} onOpen={markRead} />
+            <MeMenu compact />
           </div>
         </div>
       </header>
 
-      <main className="md:ml-[232px]">
+      <main>
         <div className="mx-auto max-w-6xl px-4 pt-5 pb-32 sm:px-6 sm:pt-6 md:pb-16">{children}</div>
       </main>
 
       {/* Mobile bottom nav — floating glass bar with a raised Build button */}
       <nav className="fixed inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] z-30 md:hidden">
-        <div className="relative grid grid-cols-5 items-end rounded-[22px] border border-white/60 bg-white/80 px-1 py-1.5 shadow-[0_12px_40px_-12px_rgba(30,24,110,0.35)] backdrop-blur-xl">
+        <div className="relative grid grid-cols-5 items-end rounded-[22px] border border-white/60 bg-white/85 px-1 py-1.5 shadow-[0_12px_40px_-12px_rgba(30,24,110,0.35)] backdrop-blur-xl">
           {MOBILE_TABS.map((n) => {
-            const active = pathname === n.href || (n.href !== "/home" && pathname.startsWith(n.href));
+            const active = isActive(pathname, n.href);
             const Icon = n.icon;
             if (n.fab)
               return (
@@ -181,36 +161,70 @@ function ShellInner({ children }: { children: React.ReactNode }) {
   );
 }
 
-function NotificationsBell({ notes, onOpen }: { notes: { items: Notification[]; unread: number } | null; onOpen: () => void }) {
-  const [open, setOpen] = useState(false);
+function SearchBox() {
+  const router = useRouter();
+  const [q, setQ] = useState("");
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        router.push(q.trim() ? `/discover?q=${encodeURIComponent(q.trim())}` : "/discover");
+      }}
+      className="relative hidden w-full max-w-[280px] sm:block"
+    >
+      <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint" />
+      <input
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="Search people, skills, goals"
+        aria-label="Search"
+        className="h-9 w-full rounded-xl border border-transparent bg-canvas pr-3 pl-9 text-[13.5px] text-ink outline-none placeholder:text-faint focus:border-brand-200 focus:bg-white focus:ring-4 focus:ring-brand-100"
+      />
+    </form>
+  );
+}
+
+function useClickOutside(open: boolean, close: () => void) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
     const h = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node)) close();
     };
     window.addEventListener("mousedown", h);
     return () => window.removeEventListener("mousedown", h);
-  }, [open]);
+  }, [open, close]);
+  return ref;
+}
+
+function NotificationsBell({ notes, onOpen, labeled }: { notes: { items: Notification[]; unread: number } | null; onOpen: () => void; labeled?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const ref = useClickOutside(open, () => setOpen(false));
   const unread = notes?.unread ?? 0;
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative flex" ref={ref}>
       <button
         aria-label={`Notifications${unread ? ` (${unread} unread)` : ""}`}
         onClick={() => {
           setOpen((o) => !o);
           if (!open) onOpen();
         }}
-        className="focus-ring relative inline-flex size-9 items-center justify-center rounded-xl text-ink-2 hover:bg-surface hover:text-ink"
+        className={cx(
+          "focus-ring relative flex items-center justify-center text-muted transition-colors hover:text-ink",
+          labeled ? "w-[78px] flex-col gap-0.5 text-[11.5px] font-medium" : "size-9 rounded-xl hover:bg-canvas",
+        )}
       >
-        <Bell className="size-[18px]" />
-        <AnimatePresence>
-          {unread ? (
-            <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="absolute top-1.5 right-1.5 flex min-w-4 items-center justify-center rounded-full bg-brand-600 px-1 text-[10px] font-bold text-white">
-              {unread}
-            </motion.span>
-          ) : null}
-        </AnimatePresence>
+        <span className="relative flex size-7 items-center justify-center">
+          <Bell className="size-[19px]" />
+          <AnimatePresence>
+            {unread ? (
+              <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="absolute -top-1 -right-1.5 flex min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-white">
+                {unread}
+              </motion.span>
+            ) : null}
+          </AnimatePresence>
+        </span>
+        {labeled ? "Alerts" : null}
       </button>
       <AnimatePresence>
         {open ? (
@@ -219,7 +233,7 @@ function NotificationsBell({ notes, onOpen }: { notes: { items: Notification[]; 
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 z-50 mt-2 w-[min(92vw,360px)] overflow-hidden rounded-2xl border border-line bg-surface shadow-[var(--shadow-pop)]"
+            className="absolute top-full right-0 z-50 mt-2 w-[min(92vw,360px)] overflow-hidden rounded-2xl border border-line bg-surface shadow-[var(--shadow-pop)]"
           >
             <div className="border-b border-line px-4 py-3 text-sm font-semibold">Notifications</div>
             <div className="max-h-[60vh] overflow-y-auto">
@@ -234,8 +248,77 @@ function NotificationsBell({ notes, onOpen }: { notes: { items: Notification[]; 
                   </Link>
                 ))
               ) : (
-                <p className="px-4 py-8 text-center text-sm text-muted">You&apos;re all caught up.</p>
+                <p className="px-4 py-8 text-center text-sm text-muted">All caught up.</p>
               )}
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function MeMenu({ compact }: { compact?: boolean }) {
+  const { me, demoMode, ai } = useSession();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const ref = useClickOutside(open, () => setOpen(false));
+  if (!me) return null;
+  const items = [
+    { href: "/profile", label: "My profile", icon: UserRound },
+    { href: "/missions", label: "Missions", icon: Flag },
+    { href: "/graph", label: "Opportunity graph", icon: Network },
+    ...(demoMode ? [{ href: "/demo", label: "Demo control room", icon: Settings2 }] : []),
+  ];
+  return (
+    <div className="relative flex" ref={ref}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-label="Account menu"
+        className={cx("focus-ring flex items-center justify-center text-muted hover:text-ink", compact ? "size-9 rounded-xl" : "w-[78px] flex-col gap-0.5 text-[11.5px] font-medium")}
+      >
+        <Avatar name={me.name} hue={me.avatarHue} size={compact ? 30 : 26} />
+        {compact ? null : (
+          <span className="flex items-center gap-0.5">
+            Me <ChevronDown className="size-3" />
+          </span>
+        )}
+      </button>
+      <AnimatePresence>
+        {open ? (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            transition={{ duration: 0.15 }}
+            className="absolute top-full right-0 z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-line bg-surface shadow-[var(--shadow-pop)]"
+          >
+            <Link href="/profile" onClick={() => setOpen(false)} className="flex items-center gap-3 border-b border-line p-4 hover:bg-canvas">
+              <Avatar name={me.name} hue={me.avatarHue} size={42} />
+              <div className="min-w-0">
+                <p className="truncate text-[14px] font-semibold text-ink">{me.name}</p>
+                <p className="truncate text-[12px] text-muted">{me.headline}</p>
+              </div>
+            </Link>
+            <div className="p-1.5">
+              {items.map((it) => (
+                <Link key={it.href} href={it.href} onClick={() => setOpen(false)} className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13.5px] text-ink-2 hover:bg-canvas hover:text-ink">
+                  <it.icon className="size-4 text-faint" /> {it.label}
+                </Link>
+              ))}
+              <button
+                onClick={async () => {
+                  await api("/api/session", { method: "DELETE" });
+                  router.push("/login");
+                }}
+                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13.5px] text-ink-2 hover:bg-canvas hover:text-ink"
+              >
+                <LogOut className="size-4 text-faint" /> Sign out
+              </button>
+            </div>
+            <div className="border-t border-line px-4 py-2.5 text-[11px] text-muted">
+              <span className={cx("mr-1.5 inline-block size-1.5 rounded-full align-middle", ai ? "bg-emerald-500" : "bg-amber-400")} />
+              {ai ? "Claude on" : "Rules engine (no AI key)"}
             </div>
           </motion.div>
         ) : null}
@@ -253,7 +336,7 @@ function DemoBanner({ name }: { name: string }) {
         Demo
       </Badge>
       <span className="truncate">
-        You&apos;re acting as <b>{name}</b>, a fictional demo persona.
+        Acting as <b>{name}</b> (fictional)
       </span>
       <Button
         size="sm"
@@ -266,13 +349,14 @@ function DemoBanner({ name }: { name: string }) {
           router.push("/home");
         }}
       >
-        Back to my account
+        Back
       </Button>
     </div>
   );
 }
 
-export function Logo({ small }: { small?: boolean }) {
+/** Brand mark. `onDark` for cinematic pages; `compact` hides the wordmark on small screens. */
+export function Logo({ small, onDark, compact }: { small?: boolean; onDark?: boolean; compact?: boolean }) {
   return (
     <span className="inline-flex items-center gap-2">
       <span className={cx("brand-gradient relative inline-flex items-center justify-center rounded-[10px] shadow-[0_6px_16px_-6px_rgba(81,69,224,0.6)]", small ? "size-7" : "size-8")}>
@@ -281,7 +365,7 @@ export function Logo({ small }: { small?: boolean }) {
           <circle cx="20" cy="16" r="5.5" opacity="0.85" />
         </svg>
       </span>
-      <span className={cx("font-semibold tracking-tight text-ink", small ? "text-[15px]" : "text-[17px]")}>Connected</span>
+      <span className={cx("font-semibold tracking-tight", onDark ? "text-bone" : "text-ink", small ? "text-[15px]" : "text-[17px]", compact && "hidden lg:inline")}>Connected</span>
     </span>
   );
 }

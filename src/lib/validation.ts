@@ -34,7 +34,9 @@ export const ProfileInput = z.object({
     .optional(),
   joinEventId: z.string().optional(),
   zone: z.string().optional(),
+  email: z.string().trim().toLowerCase().email("Enter a valid email").max(120),
+  password: z.string().min(8, "Password must be at least 8 characters").max(200),
 });
 export type ProfileInputT = z.infer<typeof ProfileInput>;
 
-export const ProfilePatch = ProfileInput.partial().omit({ joinEventId: true, zone: true });
+export const ProfilePatch = ProfileInput.partial().omit({ joinEventId: true, zone: true, email: true, password: true });

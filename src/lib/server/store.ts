@@ -13,14 +13,14 @@ const DB_FILE = path.join(DATA_DIR, "connected-db.json");
 const g = globalThis as unknown as { __connectedDb?: Database };
 
 function load(): Database {
+  let old: Database | null = null;
   try {
-    const raw = fs.readFileSync(DB_FILE, "utf8");
-    const db = JSON.parse(raw) as Database;
-    if (db.version === DB_VERSION) return db;
+    old = JSON.parse(fs.readFileSync(DB_FILE, "utf8")) as Database;
+    if (old.version === DB_VERSION) return old;
   } catch {
     // missing or corrupt → reseed
   }
-  const db = buildSeed(new Date());
+  const db = reseedKeepingRealUsers(old);
   save(db);
   return db;
 }
@@ -37,6 +37,11 @@ function save(db: Database) {
 }
 
 export function getDb(): Database {
+  // Hot reloads keep the old in-memory copy around; migrate it when the schema version changes.
+  if (g.__connectedDb && g.__connectedDb.version !== DB_VERSION) {
+    g.__connectedDb = reseedKeepingRealUsers(g.__connectedDb);
+    save(g.__connectedDb);
+  }
   if (!g.__connectedDb) g.__connectedDb = load();
   return g.__connectedDb;
 }
@@ -48,17 +53,22 @@ export function mutate<T>(fn: (db: Database) => T): T {
   return result;
 }
 
-/** Reseed demo data but keep real (non-demo) users and everything they created. */
-export function resetDemo(keepRealUsers = true): Database {
-  const old = g.__connectedDb ?? load();
+/** Fresh demo data that keeps real (non-demo) users, their logins, posts, missions and event memberships. */
+function reseedKeepingRealUsers(old: Partial<Database> | null): Database {
   const fresh = buildSeed(new Date());
-  if (keepRealUsers) {
-    const real = old.profiles.filter((p) => !p.isDemo);
-    const realIds = new Set(real.map((p) => p.id));
-    fresh.profiles.push(...real);
-    fresh.memberships.push(...old.memberships.filter((m) => realIds.has(m.userId)));
-    fresh.missions.push(...old.missions.filter((m) => realIds.has(m.userId)));
-  }
+  if (!old?.profiles) return fresh;
+  const real = old.profiles.filter((p) => !p.isDemo);
+  const realIds = new Set(real.map((p) => p.id));
+  fresh.profiles.push(...real);
+  fresh.memberships.push(...(old.memberships ?? []).filter((m) => realIds.has(m.userId)));
+  fresh.missions.push(...(old.missions ?? []).filter((m) => realIds.has(m.userId)));
+  fresh.accounts.push(...(old.accounts ?? []).filter((a) => realIds.has(a.userId)));
+  fresh.posts.push(...(old.posts ?? []).filter((p) => realIds.has(p.authorId)));
+  return fresh;
+}
+
+export function resetDemo(): Database {
+  const fresh = reseedKeepingRealUsers(g.__connectedDb ?? null);
   g.__connectedDb = fresh;
   save(fresh);
   return fresh;

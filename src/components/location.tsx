@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { Check, Loader2, LocateFixed, MapPinCheck, MapPinOff, Navigation, ShieldCheck } from "lucide-react";
 import { useCallback, useState } from "react";
-import { fmtTime } from "@/lib/client";
+import { api, fmtTime } from "@/lib/client";
 import type { ConnectedEvent } from "@/lib/types";
 import { Badge, Button, cx } from "./ui";
 
@@ -76,19 +76,41 @@ export function LocationCheckIn({
   checkedInAt,
   onCheckIn,
   onUndo,
+  onCodeCheckIn,
   compact,
 }: {
-  event: ConnectedEvent;
+  event: Pick<ConnectedEvent, "id" | "geo">;
   checkedInAt?: string;
   onCheckIn: () => Promise<void>;
   onUndo?: () => Promise<void>;
+  onCodeCheckIn?: () => void;
   compact?: boolean;
 }) {
   const { state, locate } = useDevicePosition();
   const [result, setResult] = useState<{ inside: boolean; distance: number } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [showCode, setShowCode] = useState(false);
+  const [code, setCode] = useState("");
+  const [codeMsg, setCodeMsg] = useState<{ ok: boolean; text: string } | null>(null);
   if (!event.geo) return null;
   const geo = event.geo;
+  const gpsFailed = state.status === "denied" || state.status === "error" || state.status === "unsupported";
+
+  async function submitCode(e: React.FormEvent) {
+    e.preventDefault();
+    if (!code.trim()) return;
+    setSaving(true);
+    setCodeMsg(null);
+    try {
+      await api(`/api/events/${event.id}`, { body: { optIn: true, checkInCode: code.trim() } });
+      setCodeMsg({ ok: true, text: "Checked in with the venue code." });
+      onCodeCheckIn?.();
+    } catch (err) {
+      setCodeMsg({ ok: false, text: (err as Error).message });
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function check() {
     setResult(null);
@@ -159,12 +181,32 @@ export function LocationCheckIn({
             <Check className="size-3.5" /> You&apos;re at the venue — checking you in.
           </motion.p>
         ) : null}
-        {state.status === "denied" || state.status === "error" || state.status === "unsupported" ? (
+        {gpsFailed ? (
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-2.5 text-[12.5px] text-muted">
-            {state.message}
+            {state.status === "denied" ? "Location is blocked in this browser." : state.message} Use the venue code instead.
           </motion.p>
         ) : null}
       </AnimatePresence>
+      {showCode || gpsFailed ? (
+        <form onSubmit={submitCode} className="mt-3 flex gap-2">
+          <input
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            placeholder="Venue code"
+            maxLength={20}
+            autoCapitalize="characters"
+            className="h-9 min-w-0 flex-1 rounded-xl border border-line bg-surface px-3 text-[13px] font-semibold tracking-[0.2em] uppercase outline-none focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
+          />
+          <Button size="sm" type="submit" variant="secondary" loading={saving} className="h-9">
+            Check in
+          </Button>
+        </form>
+      ) : (
+        <button type="button" onClick={() => setShowCode(true)} className="mt-2.5 text-[12px] font-medium text-brand-700 hover:underline">
+          No GPS? Use the venue code
+        </button>
+      )}
+      {codeMsg ? <p className={cx("mt-2 text-[12.5px]", codeMsg.ok ? "text-emerald-700" : "text-rose-700")}>{codeMsg.text}</p> : null}
       <p className="mt-2.5 flex items-center gap-1 text-[11px] text-faint">
         <ShieldCheck className="size-3" /> Distance is computed on this device.
       </p>

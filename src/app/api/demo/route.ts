@@ -55,6 +55,6 @@ export const POST = handle(async (req: Request) => {
     await setOriginal(null);
     return { ok: true };
   }
-  resetDemo(true);
+  resetDemo();
   return { ok: true };
 });

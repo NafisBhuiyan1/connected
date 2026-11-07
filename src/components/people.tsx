@@ -139,16 +139,23 @@ export function MatchCard({
   rank?: number;
 }) {
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const p = match.profile;
   const live = match.liveNow && match.liveNow.mode !== "heads-down" ? match.liveNow : undefined;
+  const extra = Math.max(0, match.reasons.length - 2);
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: Math.min(0.4, (rank ?? 0) * 0.05) }}
-      className="card card-hover flex flex-col p-4"
+      className="card card-hover group relative flex flex-col overflow-hidden p-4"
     >
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-[3px] opacity-0 transition-opacity group-hover:opacity-100"
+        style={{ background: `linear-gradient(90deg, hsl(${p.avatarHue} 70% 60%), #7a5af8)` }}
+      />
       <div className="flex items-start justify-between gap-3">
         <PersonHeader p={p} live={Boolean(live)} />
         <ScoreRing score={match.score} size={46} />
@@ -167,9 +174,16 @@ export function MatchCard({
           </Badge>
         ) : null}
       </div>
-      <ReasonList reasons={match.reasons} className="mt-3 flex-1" />
+      <div className="mt-3 flex-1">
+        <ReasonList reasons={match.reasons} max={expanded ? 10 : 2} />
+        {extra ? (
+          <button type="button" onClick={() => setExpanded((v) => !v)} className="mt-1.5 text-[12px] font-medium text-brand-600 hover:text-brand-700">
+            {expanded ? "Show less" : `+${extra} more`}
+          </button>
+        ) : null}
+      </div>
       <div className="mt-4 flex items-center justify-between gap-2 border-t border-line pt-3">
-        <span className="truncate text-[12px] text-muted">Next: {match.nextStep}</span>
+        <span className="truncate text-[12px] text-muted">{match.nextStep}</span>
         <div className="flex shrink-0 gap-1.5">
           <Link href={`/people/${p.id}`} className="focus-ring inline-flex h-8 items-center rounded-lg px-2.5 text-[13px] font-medium text-ink-2 hover:bg-canvas">
             Profile
@@ -313,9 +327,9 @@ export function ConnectDialog({
         </div>
         {reasons?.length ? (
           <div className="rounded-2xl border border-brand-100 bg-brand-50/50 p-3">
-            <p className="mb-1.5 text-[12px] font-semibold text-brand-700">Why Connected suggested {name}</p>
+            <p className="mb-1.5 text-[12px] font-semibold text-brand-700">Why {name}</p>
             <ul className="space-y-1 text-[13px] text-ink-2">
-              {reasons.slice(0, 3).map((r) => (
+              {reasons.slice(0, 2).map((r) => (
                 <li key={r}>• {r}</li>
               ))}
             </ul>
@@ -323,7 +337,7 @@ export function ConnectDialog({
         ) : null}
         {person.gives.length ? (
           <div className="flex flex-wrap items-center gap-1.5 text-[12.5px] text-muted">
-            <HandHeart className="size-3.5 text-brand-500" /> {name} can help with:
+            <HandHeart className="size-3.5 text-brand-500" /> Ask about:
             {person.gives.map((g) => (
               <button key={g} type="button" onClick={() => setAsk((a) => a || `Could you help me with ${g.charAt(0).toLowerCase()}${g.slice(1)}?`)} className="rounded-full border border-line bg-surface px-2 py-0.5 text-ink-2 hover:border-brand-200 hover:text-brand-700">
                 {g}
@@ -331,22 +345,22 @@ export function ConnectDialog({
             ))}
           </div>
         ) : null}
-        <Field label="Your specific ask (required)" hint="Specific asks get accepted far more often than “let's connect”. At least one sentence." error={ask && !askOk ? "A little more detail, please." : null}>
-          <Textarea value={ask} onChange={(e) => setAsk(e.target.value)} placeholder={`e.g. Would you be up for designing the onboarding for our AI fintech app this weekend?`} className="min-h-20" maxLength={400} />
+        <Field label="Your ask" hint="Be specific — one sentence." error={ask && !askOk ? "A little more detail, please." : null}>
+          <Textarea value={ask} onChange={(e) => setAsk(e.target.value)} placeholder="Want to design our AI fintech app this weekend?" className="min-h-20" maxLength={400} />
         </Field>
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[12px] text-muted">Optional: let AI draft the message from your shared facts.</span>
+          <span className="text-[12px] text-muted">Optional AI draft</span>
           <Button variant="soft" size="sm" onClick={makeDraft} loading={drafting} icon={<Wand2 className="size-3.5" />}>
             {draft ? "Redraft" : "Draft intro"}
           </Button>
         </div>
         {draft ? (
           <div className="space-y-3">
-            <Field label="Message (edit freely)" hint={draft.source === "claude" ? "Drafted by Claude from real profile facts — review before sending." : "Drafted from a template (no AI key configured) — review before sending."}>
+            <Field label="Message" hint={draft.source === "claude" ? "Drafted by Claude · edit freely" : "Template draft · edit freely"}>
               <Textarea value={message} onChange={(e) => setMessage(e.target.value)} className="min-h-28" maxLength={1200} />
             </Field>
             <div>
-              <p className="mb-1.5 text-[12.5px] font-medium text-ink-2">Icebreakers for when you meet</p>
+              <p className="mb-1.5 text-[12.5px] font-medium text-ink-2">Icebreakers</p>
               <ul className="space-y-1">
                 {draft.icebreakers.map((q) => (
                   <li key={q} className="rounded-xl bg-canvas px-3 py-2 text-[13px] text-ink-2">
@@ -359,7 +373,7 @@ export function ConnectDialog({
         ) : null}
         {err ? <p className="rounded-xl bg-rose-50 px-3 py-2 text-[13px] text-rose-700">{err}</p> : null}
         <div className="flex flex-col-reverse gap-2 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-[12px] text-muted">Nothing is sent until you press Send. {name} can accept, ignore or decline.</p>
+          <p className="text-[12px] text-muted">Nothing sends until you press Send.</p>
           <Button onClick={send} loading={sending} disabled={!askOk} icon={<Send className="size-4" />}>
             Send request
           </Button>
@@ -393,6 +407,31 @@ export function QuietInterestButton({ personId, name, sent: initial, onMutual }:
     <Button variant="secondary" size="sm" onClick={go} loading={loading} disabled={sent} icon={sent ? <Check className="size-3.5" /> : <EyeOff className="size-3.5" />} title="Double opt-in: they're only told if they also want to meet you">
       {sent ? "Interest saved" : "Quiet interest"}
     </Button>
+  );
+}
+
+/** LinkedIn-style cover banner in Connected colors: indigo → violet → night, with a faint constellation. */
+export function ProfileCover({ hue = 250, className }: { hue?: number; className?: string }) {
+  const pts = [
+    [8, 30], [18, 62], [27, 22], [38, 48], [47, 18], [58, 58], [66, 30], [76, 52], [85, 20], [93, 44],
+  ] as const;
+  return (
+    <div
+      className={cx("relative h-28 overflow-hidden sm:h-36", className)}
+      style={{
+        background: `radial-gradient(120% 140% at 85% 0%, hsl(${hue} 80% 62% / 0.55), transparent 55%), linear-gradient(120deg, #3b2fb8 0%, #6a4ff0 42%, #2a1f6e 72%, #0b0a1a 100%)`,
+      }}
+    >
+      <svg className="absolute inset-0 size-full opacity-60" viewBox="0 0 100 80" preserveAspectRatio="none" aria-hidden>
+        {pts.slice(0, -1).map(([x, y], i) => (
+          <line key={i} x1={x} y1={y} x2={pts[i + 1][0]} y2={pts[i + 1][1]} stroke="white" strokeOpacity="0.18" strokeWidth="0.25" />
+        ))}
+        {pts.map(([x, y], i) => (
+          <circle key={i} cx={x} cy={y} r={i % 3 === 0 ? 0.9 : 0.55} fill="white" fillOpacity={i % 3 === 0 ? 0.85 : 0.5} />
+        ))}
+      </svg>
+      <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.35) 0.6px, transparent 0.6px)", backgroundSize: "14px 14px", opacity: 0.25 }} />
+    </div>
   );
 }
 

@@ -16,6 +16,8 @@ const Input = z.object({
   leave: z.boolean().optional(),
   // Result of an on-device geofence check. Coordinates are never sent — only "inside the venue: yes".
   checkIn: z.boolean().optional(),
+  // Fallback when GPS is unavailable: the code shown on screens at the venue.
+  checkInCode: z.string().max(20).optional(),
   status: z
     .object({
       mode: z.enum(["quick-chat", "team-up", "mentoring", "heads-down"]),

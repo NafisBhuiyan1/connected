@@ -4,9 +4,10 @@ import { AnimatePresence, motion } from "motion/react";
 import { Copy, Download, Eye, EyeOff, Globe, LogOut, Plus, QrCode, Save, Search, ShieldCheck, Trash2, Users, X } from "lucide-react";
 import QRCode from "qrcode";
 import { useEffect, useMemo, useState } from "react";
+import { ProfileCover } from "@/components/people";
 import { useSession } from "@/components/session";
 import { useToast } from "@/components/toast";
-import { Avatar, Badge, Button, Card, Chip, cx, DemoTag, Field, Input, PageHeader, SectionTitle, Select, Textarea, Toggle } from "@/components/ui";
+import { Avatar, Badge, Button, Card, Chip, cx, DemoTag, Field, Input, SectionTitle, Select, Textarea, Toggle } from "@/components/ui";
 import { api } from "@/lib/client";
 import { COLLAB_LABELS, INTERESTS, LEVEL_LABEL, ROLES, SKILL_BY_ID, SKILLS } from "@/lib/ontology";
 import type { Availability, CollabType, Level, PersonRole, Profile, UserSkill, Visibility } from "@/lib/types";
@@ -46,9 +47,9 @@ const ROLE_OPTIONS: { value: PersonRole; label: string }[] = [
 ];
 
 const VISIBILITY: { value: Visibility; label: string; body: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { value: "everyone", label: "Everyone on Connected", body: "Anyone signed in can discover you and see your card when they scan your QR code.", icon: Globe },
-  { value: "events", label: "Only people at my events", body: "Only people who opted in to the same event networking space can see you.", icon: Users },
-  { value: "hidden", label: "Hidden", body: "You won't appear in discovery or team suggestions. Existing connections and teammates can still see you.", icon: EyeOff },
+  { value: "everyone", label: "Everyone", body: "Anyone signed in can find you.", icon: Globe },
+  { value: "events", label: "My events only", body: "Only people at your opted-in events.", icon: Users },
+  { value: "hidden", label: "Hidden", body: "Only connections and teammates.", icon: EyeOff },
 ];
 
 function toDraft(p: Profile): Draft {
@@ -146,31 +147,37 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <PageHeader
-        eyebrow="Profile"
-        title="How Connected sees you"
-        sub="Everything here powers your matches. Recommendations only ever quote what you write on this page."
-        action={
-          <Button variant="secondary" onClick={signOut} icon={<LogOut className="size-4" />}>
-            Sign out
-          </Button>
-        }
-      />
+      <Card className="mb-5 overflow-hidden">
+        <ProfileCover hue={me.avatarHue} />
+        <div className="relative px-5 pb-5 sm:px-6">
+          <div className="-mt-12 flex items-end justify-between gap-3 sm:-mt-14">
+            <span className="rounded-full ring-4 ring-surface">
+              <Avatar name={draft.name || me.name} hue={me.avatarHue} size={104} />
+            </span>
+            <div className="mb-1 flex gap-2">
+              <a href={`/people/${me.id}`} className="focus-ring inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-surface px-3 text-[13px] font-medium text-ink-2 hover:border-line-2">
+                <Eye className="size-4" /> <span className="hidden sm:inline">View as others</span>
+              </a>
+              <Button variant="secondary" size="sm" onClick={signOut} icon={<LogOut className="size-4" />} className="h-9">
+                <span className="hidden sm:inline">Sign out</span>
+              </Button>
+            </div>
+          </div>
+          <div className="mt-3 min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="truncate text-[26px] leading-tight font-semibold tracking-tight text-ink">{draft.name || "Your name"}</h1>
+              {me.isDemo ? <DemoTag /> : null}
+            </div>
+            <p className="truncate text-[15px] text-ink-2">{draft.headline || "Add a headline"}</p>
+            <p className="mt-1 text-[12.5px] text-muted">Matches only quote what you write here.</p>
+          </div>
+        </div>
+      </Card>
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-5">
           {/* Basics */}
-          <Card className="p-5">
-            <div className="mb-5 flex items-center gap-3">
-              <Avatar name={draft.name || me.name} hue={me.avatarHue} size={56} />
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="truncate text-[17px] font-semibold text-ink">{draft.name || "Your name"}</p>
-                  {me.isDemo ? <DemoTag /> : null}
-                </div>
-                <p className="truncate text-[13px] text-muted">{draft.headline || "Add a headline"}</p>
-              </div>
-            </div>
+          <Card className="p-5 sm:p-6">
             <SectionTitle title="Basics" />
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Name" htmlFor="p-name">
@@ -180,7 +187,7 @@ export default function ProfilePage() {
                 <Input id="p-pronouns" value={draft.pronouns} onChange={(e) => set("pronouns", e.target.value)} placeholder="she/her, they/them…" maxLength={20} />
               </Field>
               <div className="sm:col-span-2">
-                <Field label="Headline" htmlFor="p-headline" hint="One line: what you do and what you're into.">
+                <Field label="Headline" htmlFor="p-headline">
                   <Input id="p-headline" value={draft.headline} onChange={(e) => set("headline", e.target.value)} maxLength={90} />
                 </Field>
               </div>
@@ -203,7 +210,7 @@ export default function ProfilePage() {
                 <Input id="p-major" value={draft.major} onChange={(e) => set("major", e.target.value)} maxLength={80} />
               </Field>
               <div className="sm:col-span-2">
-                <Field label="General area" htmlFor="p-area" hint="Only a general area — Connected never stores or shows precise location.">
+                <Field label="General area" htmlFor="p-area" hint="General area only — never precise.">
                   <Input id="p-area" value={draft.area} onChange={(e) => set("area", e.target.value)} placeholder="UNC Charlotte area" maxLength={80} />
                 </Field>
               </div>
@@ -216,14 +223,14 @@ export default function ProfilePage() {
           </Card>
 
           {/* Skills */}
-          <Card className="p-5">
-            <SectionTitle title="Skills" sub="Be honest about levels — teams are formed around what you can actually cover." />
+          <Card className="p-5 sm:p-6">
+            <SectionTitle title="Skills" sub="Teams form around these" />
             <SkillsEditor skills={draft.skills} onChange={(s) => set("skills", s)} />
           </Card>
 
           {/* Interests */}
-          <Card className="p-5">
-            <SectionTitle title="Interests" sub={`Pick up to 10 · ${draft.interests.length} selected`} />
+          <Card className="p-5 sm:p-6">
+            <SectionTitle title="Interests" sub={`${draft.interests.length}/10`} />
             <div className="flex flex-wrap gap-2">
               {INTERESTS.map((i) => (
                 <Chip
@@ -241,19 +248,19 @@ export default function ProfilePage() {
           </Card>
 
           {/* Gives & Asks */}
-          <Card className="p-5">
-            <SectionTitle title="Gives & asks" sub="Explicit willingness to help is a matching signal — people who need exactly this will find you." />
+          <Card className="p-5 sm:p-6">
+            <SectionTitle title="Gives & asks" sub="What you offer and need" />
             <GivesEditor gives={draft.gives} onChange={(g) => set("gives", g)} />
             <div className="mt-5">
-              <Field label="What do you need help with right now?" htmlFor="p-ask" hint="Your current ask. It powers Home, Discover and your graph.">
+              <Field label="What do you need right now?" htmlFor="p-ask">
                 <Textarea id="p-ask" value={draft.ask} onChange={(e) => set("ask", e.target.value)} maxLength={300} className="min-h-20" placeholder="e.g. I want to build an AI startup but need a developer and a designer." />
               </Field>
             </div>
           </Card>
 
           {/* Looking for & open to */}
-          <Card className="p-5">
-            <SectionTitle title="Who I want to meet" sub="Roles you're looking for — also used for reciprocity (they see that you'd fit them)." />
+          <Card className="p-5 sm:p-6">
+            <SectionTitle title="Who I want to meet" />
             <div className="flex flex-wrap gap-2">
               {ROLES.map((r) => (
                 <Chip
@@ -279,7 +286,7 @@ export default function ProfilePage() {
               </div>
             </div>
             <div className="mt-6">
-              <SectionTitle title="Intros I'd consider making" sub="Lets others see a warm path through you in these areas. It's never a promise — you always decide case by case." />
+              <SectionTitle title="Intros I'd consider" sub="Never a promise" />
               <div className="flex flex-wrap gap-2">
                 {INTERESTS.map((i) => (
                   <Chip
@@ -296,7 +303,7 @@ export default function ProfilePage() {
               </div>
             </div>
             <div className="mt-6 max-w-xs">
-              <Field label="Availability" htmlFor="p-avail" hint="For time-boxed availability at an event, use “Open now” in the event space.">
+              <Field label="Availability" htmlFor="p-avail">
                 <Select id="p-avail" value={draft.availability} onChange={(e) => set("availability", e.target.value as Availability)}>
                   <option value="high">High — happy to meet this week</option>
                   <option value="medium">Medium — a few chats</option>
@@ -307,8 +314,8 @@ export default function ProfilePage() {
           </Card>
 
           {/* Links */}
-          <Card className="p-5">
-            <SectionTitle title="Links (optional)" sub="Full URLs, e.g. https://github.com/you" />
+          <Card className="p-5 sm:p-6">
+            <SectionTitle title="Links" sub="Optional" />
             <div className="grid gap-4 sm:grid-cols-3">
               <Field label="GitHub" htmlFor="p-gh">
                 <Input id="p-gh" value={draft.github} onChange={(e) => set("github", e.target.value)} placeholder="https://github.com/…" />
@@ -323,14 +330,14 @@ export default function ProfilePage() {
           </Card>
 
           {/* Privacy */}
-          <Card className="p-5">
+          <Card className="p-5 sm:p-6">
             <SectionTitle
               title={
                 <span className="inline-flex items-center gap-2">
                   <ShieldCheck className="size-4 text-brand-600" /> Privacy
                 </span>
               }
-              sub="You control who can find you and contact you. Connected never shows live GPS — only event zones you choose."
+              sub="No GPS — only zones you pick"
             />
             <div className="grid gap-2">
               {VISIBILITY.map((v) => {
@@ -363,7 +370,7 @@ export default function ProfilePage() {
                 checked={draft.allowRequests}
                 onChange={(v) => set("allowRequests", v)}
                 label="Accept connection requests"
-                sub="Turn off to stop new requests. Quiet interest still works — you'll only be matched if it's mutual."
+                sub="Quiet interest still works when off."
               />
             </div>
           </Card>
@@ -374,8 +381,7 @@ export default function ProfilePage() {
         <div className="space-y-5 lg:sticky lg:top-20 lg:self-start">
           <QrCard id={me.id} name={me.name} visibility={draft.visibility} />
           <Card className="p-4">
-            <p className="text-[13.5px] font-semibold text-ink">Preview as others see you</p>
-            <p className="mt-1 text-[12.5px] text-muted">Matches quote only these fields — nothing is invented.</p>
+            <p className="text-[13.5px] font-semibold text-ink">Top skills</p>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {draft.skills
                 .slice()
@@ -403,16 +409,16 @@ export default function ProfilePage() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 80, opacity: 0 }}
             transition={{ type: "spring", stiffness: 380, damping: 32 }}
-            className="fixed inset-x-0 bottom-16 z-40 flex justify-center px-4 md:bottom-6 md:pl-[232px]"
+            className="fixed inset-x-0 bottom-24 z-40 flex justify-center px-4 md:bottom-6"
           >
-            <div className="flex w-full max-w-xl items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-3 shadow-[var(--shadow-pop)]">
-              <span className="pl-1 text-[13px] text-ink-2">You have unsaved changes</span>
+            <div className="flex w-full max-w-xl items-center justify-between gap-3 rounded-2xl border border-line bg-surface/95 p-3 shadow-[var(--shadow-pop)] backdrop-blur">
+              <span className="pl-1 text-[13px] text-ink-2">Unsaved changes</span>
               <div className="flex gap-2">
                 <Button variant="ghost" size="sm" onClick={() => setDraft(toDraft(me))}>
                   Discard
                 </Button>
                 <Button size="sm" onClick={save} loading={saving} icon={<Save className="size-3.5" />}>
-                  Save profile
+                  Save
                 </Button>
               </div>
             </div>
@@ -471,7 +477,7 @@ function SkillsEditor({ skills, onChange }: { skills: UserSkill[]; onChange: (s:
           ))}
         </ul>
       ) : (
-        <p className="mb-4 rounded-2xl border border-dashed border-line-2 px-4 py-5 text-center text-[13px] text-muted">No skills yet — add a few so teams can be built around you.</p>
+        <p className="mb-4 rounded-2xl border border-dashed border-line-2 px-4 py-5 text-center text-[13px] text-muted">No skills yet. Add a few.</p>
       )}
       <div className="relative">
         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint" />
@@ -509,7 +515,7 @@ function GivesEditor({ gives, onChange }: { gives: string[]; onChange: (g: strin
   };
   return (
     <div>
-      <p className="mb-2 text-[13px] font-medium text-ink-2">What I can help with in 15 minutes</p>
+      <p className="mb-2 text-[13px] font-medium text-ink-2">I can help with (15 min)</p>
       <div className="mb-2.5 flex flex-wrap gap-1.5">
         {gives.map((g) => (
           <span key={g} className="inline-flex items-center gap-1.5 rounded-full border border-brand-100 bg-brand-50 py-1 pr-1.5 pl-3 text-[13px] text-brand-800">
@@ -519,7 +525,7 @@ function GivesEditor({ gives, onChange }: { gives: string[]; onChange: (g: strin
             </button>
           </span>
         ))}
-        {!gives.length ? <span className="text-[12.5px] text-muted">Nothing yet — e.g. “Portfolio feedback” or “Python debugging”.</span> : null}
+        {!gives.length ? <span className="text-[12.5px] text-muted">e.g. “Portfolio feedback”</span> : null}
       </div>
       {gives.length < 5 ? (
         <div className="flex gap-2">
@@ -540,7 +546,7 @@ function GivesEditor({ gives, onChange }: { gives: string[]; onChange: (g: strin
           </Button>
         </div>
       ) : (
-        <p className="text-[12px] text-muted">5 max — keep it focused.</p>
+        <p className="text-[12px] text-muted">5 max.</p>
       )}
     </div>
   );
@@ -578,7 +584,7 @@ function QrCard({ id, name, visibility }: { id: string; name: string; visibility
     <Card className="overflow-hidden p-0">
       <div className="brand-gradient flex items-center gap-2 px-4 py-3 text-white">
         <QrCode className="size-4" />
-        <p className="text-[13.5px] font-semibold">Your Connected QR</p>
+        <p className="text-[13.5px] font-semibold">Your QR</p>
       </div>
       <div className="p-4">
         <div className="mx-auto flex aspect-square w-full max-w-[240px] items-center justify-center rounded-2xl border border-line bg-white p-3">
@@ -589,11 +595,9 @@ function QrCard({ id, name, visibility }: { id: string; name: string; visibility
             <div className="skeleton size-full" />
           )}
         </div>
-        <p className="mt-3 text-center text-[12.5px] text-muted">Show this at the event — scanning opens your Connected card.</p>
+        <p className="mt-3 text-center text-[12.5px] text-muted">Scan to open your card.</p>
         {visibility !== "everyone" ? (
-          <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-center text-[12px] text-amber-800">
-            Your visibility isn&apos;t “Everyone”, so people who aren&apos;t signed in will see “This profile is private”.
-          </p>
+          <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-center text-[12px] text-amber-800">Shows as private to signed-out viewers.</p>
         ) : null}
         <div className="mt-3 flex gap-2">
           <Button variant="secondary" size="sm" className="flex-1" onClick={copy} icon={<Copy className="size-3.5" />}>

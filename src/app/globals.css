@@ -3,6 +3,10 @@
 @theme {
   --font-sans: var(--font-geist), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-serif: var(--font-instrument), "Times New Roman", serif;
+  --color-night: #06060b;
+  --color-night-2: #0d0d16;
+  --color-bone: #f3f1ea;
 
   --color-ink: #0d1021;
   --color-ink-2: #33374d;
@@ -108,4 +112,104 @@ body {
   .scrollbar-none {
     scrollbar-width: none;
   }
+}
+
+/* ---------- Cinematic dark surfaces (landing, login, onboarding) ---------- */
+
+@keyframes cx-twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes cx-flare {
+  0%,
+  100% {
+    opacity: 0.75;
+    transform: translateX(-50%) scaleX(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(-50%) scaleX(1.08);
+  }
+}
+.cx-twinkle {
+  animation: cx-twinkle 4.5s ease-in-out infinite;
+}
+.cx-flare {
+  animation: cx-flare 9s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cx-twinkle,
+  .cx-flare {
+    animation: none;
+  }
+}
+
+/* Re-skin the light UI primitives when they sit on a dark surface. Unlayered, so these win over utilities. */
+.on-dark {
+  color-scheme: dark;
+}
+.on-dark .bg-surface,
+.on-dark .bg-canvas {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+.on-dark .border-line,
+.on-dark .border-line-2 {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+.on-dark .text-ink {
+  color: #f3f1ea;
+}
+.on-dark .text-ink-2 {
+  color: rgba(243, 241, 234, 0.82);
+}
+.on-dark .text-muted {
+  color: rgba(243, 241, 234, 0.58);
+}
+.on-dark .text-faint,
+.on-dark .placeholder\:text-faint::placeholder,
+.on-dark input::placeholder,
+.on-dark textarea::placeholder {
+  color: rgba(243, 241, 234, 0.38);
+}
+.on-dark .bg-brand-50 {
+  background-color: rgba(99, 96, 240, 0.22);
+}
+.on-dark .text-brand-700 {
+  color: #c7cbff;
+}
+.on-dark .border-brand-300,
+.on-dark .border-brand-200 {
+  border-color: rgba(163, 168, 253, 0.55);
+}
+.on-dark .bg-brand-600 {
+  background-color: #7f81f8;
+}
+.on-dark .bg-line-2 {
+  background-color: rgba(255, 255, 255, 0.18);
+}
+.on-dark .hover\:bg-canvas:hover,
+.on-dark .hover\:bg-brand-100:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+.on-dark .hover\:text-ink:hover,
+.on-dark .hover\:text-brand-700:hover {
+  color: #f3f1ea;
+}
+.on-dark .border-dashed {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.on-dark .focus\:border-brand-300:focus {
+  border-color: rgba(163, 168, 253, 0.7);
+}
+.on-dark .focus\:ring-brand-100:focus {
+  --tw-ring-color: rgba(99, 96, 240, 0.25);
+}
+.on-dark select option {
+  background: #0d0d16;
+  color: #f3f1ea;
 }

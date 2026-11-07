@@ -96,8 +96,8 @@ function Discover() {
     <div>
       <PageHeader
         eyebrow="Discover"
-        title="Who should you meet?"
-        sub="Describe what you're trying to do. Connected understands the goal, then ranks the people who opted in — and explains every match from their real profile."
+        title={<span className="font-serif text-[34px] font-normal tracking-normal sm:text-[44px]">Who should you meet?</span>}
+        sub="Say your goal. Get ranked, explained matches."
       />
 
       <Card className="brand-gradient-soft overflow-hidden p-4 sm:p-5">
@@ -108,7 +108,7 @@ function Discover() {
           }}
           className="space-y-3"
         >
-          <label htmlFor="discover-q" className="block text-[13px] font-medium text-ink-2">
+          <label htmlFor="discover-q" className="sr-only">
             What are you trying to do?
           </label>
           <Textarea
@@ -121,11 +121,11 @@ function Discover() {
                 submit();
               }
             }}
-            placeholder="e.g. I'm a finance student with a fintech idea and I need a developer who might become my cofounder."
-            className="min-h-24 text-[15px]"
+            placeholder="e.g. Need a developer who could be my fintech cofounder"
+            className="min-h-20 text-[15px] sm:min-h-24"
             maxLength={1200}
           />
-          <div className="flex flex-wrap gap-1.5">
+          <div className="scrollbar-none -mx-4 flex gap-1.5 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
             {EXAMPLES.map((ex) => (
               <Chip
                 key={ex}
@@ -135,6 +135,7 @@ function Discover() {
                   submit(ex);
                 }}
                 icon={<Sparkles className="size-3 text-violet-500" />}
+                className="shrink-0 whitespace-nowrap"
               >
                 {ex}
               </Chip>
@@ -182,7 +183,7 @@ function Discover() {
                   {result.matches.length} {result.matches.length === 1 ? "match" : "matches"}
                   {lastQuery?.ev ? ` at ${evOptions.find((e) => e.event.id === lastQuery.ev)?.event.title ?? "this event"}` : ""}
                 </h2>
-                <span className="hidden text-[12px] text-muted sm:block">Ordered by fit, diversified across the roles you need</span>
+                <span className="hidden text-[12px] text-muted sm:block">Best fit first</span>
               </div>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {result.matches.map((m, i) => (

@@ -181,11 +181,11 @@ function Builder() {
       <PageHeader
         eyebrow="AI Team Builder"
         title={
-          <>
-            What do you want to <span className="text-gradient">build</span>?
-          </>
+          <span className="font-serif text-[34px] font-normal tracking-normal sm:text-[44px]">
+            What do you want to <span className="text-gradient italic">build</span>?
+          </span>
         }
-        sub="Describe the idea. Connected works out the roles it needs, then finds the best complementary team among people who opted in, and shows you exactly why."
+        sub="Your idea in. Your team out."
       />
 
       <Card className="p-4 sm:p-5">
@@ -242,8 +242,19 @@ function Builder() {
         {phase === "done" && plan && me ? (
           <motion.div key="result" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mt-6 space-y-5">
             <Interpretation plan={plan} onChangeRoles={(roles) => replan({ intent: { ...plan.intent, roles } })} />
-            <div className="grid gap-5 lg:grid-cols-[1.45fr_1fr]">
-              <div className="space-y-5">
+            {/* Mobile: sticky invite bar */}
+            <div className="fixed inset-x-3 bottom-[96px] z-30 md:hidden">
+              <div className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface/95 p-2.5 pl-4 shadow-[var(--shadow-pop)] backdrop-blur">
+                <span className="min-w-0 truncate text-[13px] text-ink-2">
+                  <b className="font-semibold text-ink">{Math.round(plan.result.coverage * 100)}%</b> coverage · {plan.result.members.length + 1} people
+                </span>
+                <Button size="md" onClick={sendInvites} loading={sending} disabled={!plan.result.members.length} icon={<Send className="size-4" />}>
+                  Invite
+                </Button>
+              </div>
+            </div>
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]">
+              <div className="min-w-0 space-y-5">
                 <TeamCard
                   plan={plan}
                   meId={me.id}
@@ -268,7 +279,7 @@ function Builder() {
                     </Button>
                   </div>
                   <p className="mt-3 text-[12px] text-muted">
-                    Each person gets an invite with your pitch and their suggested role. They decide for themselves, and nothing else about you is shared.
+                    They get your pitch and their role. Each decides.
                     {excluded.length ? (
                       <button className="ml-1 font-medium text-brand-700 hover:underline" onClick={() => replan({ excluded: [] })}>
                         Reset {excluded.length} removed
@@ -277,7 +288,7 @@ function Builder() {
                   </p>
                 </Card>
               </div>
-              <div className="space-y-5">
+              <div className="min-w-0 space-y-5 pb-20 md:pb-0">
                 <CoveragePanel plan={plan} meId={me.id} postGaps={postGaps} setPostGaps={setPostGaps} />
                 <OptimizerStats plan={plan} />
               </div>
@@ -333,7 +344,7 @@ function Interpretation({ plan, onChangeRoles }: { plan: PlanResponse; onChangeR
         </div>
       </div>
       <div className="mt-4">
-        <p className="mb-2 text-[12px] font-semibold tracking-wide text-faint uppercase">Roles this project needs</p>
+        <p className="mb-2 text-[12px] font-semibold tracking-wide text-faint uppercase">Roles needed</p>
         <div className="flex flex-wrap gap-2">
           {roles.map((r) => (
             <span key={r.roleId} title={r.why} className={cx("group inline-flex items-center gap-1.5 rounded-full border py-1 pr-1.5 pl-3 text-[13px] font-medium", r.weight >= 1.1 ? "border-brand-200 bg-brand-50 text-brand-700" : "border-line bg-surface text-ink-2")}>
@@ -371,13 +382,19 @@ function Interpretation({ plan, onChangeRoles }: { plan: PlanResponse; onChangeR
             </button>
           )}
         </div>
-        <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">
-          {roles.slice(0, 6).map((r) => (
-            <li key={r.roleId} className="text-[12.5px] text-muted">
-              <span className="font-medium text-ink-2">{roleShort(r.roleId)}:</span> {r.why}
-            </li>
-          ))}
-        </ul>
+        <details className="group mt-3">
+          <summary className="cursor-pointer list-none text-[12.5px] font-medium text-brand-600 hover:text-brand-700">
+            <span className="group-open:hidden">Why these roles?</span>
+            <span className="hidden group-open:inline">Hide reasons</span>
+          </summary>
+          <ul className="mt-2 grid gap-1.5 sm:grid-cols-2">
+            {roles.slice(0, 6).map((r) => (
+              <li key={r.roleId} className="text-[12.5px] text-muted">
+                <span className="font-medium text-ink-2">{roleShort(r.roleId)}:</span> {r.why}
+              </li>
+            ))}
+          </ul>
+        </details>
       </div>
     </Card>
   );
@@ -543,7 +560,6 @@ function CoveragePanel({ plan, meId, postGaps, setPostGaps }: { plan: PlanRespon
   return (
     <Card className="p-5">
       <p className="text-[15px] font-semibold text-ink">Role coverage</p>
-      <p className="mt-0.5 text-[12.5px] text-muted">How well the team covers each role, as the best single person's fit.</p>
       <ul className="mt-4 space-y-3">
         {plan.result.slots.map((s) => {
           const who = s.coveredBy === meId ? "You" : s.coveredBy ? firstName(plan.people[s.coveredBy]?.name ?? "") : "—";

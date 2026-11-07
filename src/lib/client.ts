@@ -28,7 +28,7 @@ export async function api<T = unknown>(path: string, init?: { method?: string; b
   if (!res.ok) {
     const msg = (data as { error?: string } | null)?.error ?? `Request failed (${res.status})`;
     if (res.status === 401 && typeof window !== "undefined" && !path.startsWith("/api/session")) {
-      window.location.href = "/onboarding";
+      window.location.href = "/login";
     }
     throw new ClientError(res.status, msg);
   }

@@ -86,6 +86,8 @@ export interface ConnectedEvent {
   zones: EventZone[];
   /** Venue geofence. Distance checks run on the attendee's device; coordinates are never sent to the server. */
   geo?: { lat: number; lng: number; radiusM: number; label: string };
+  /** Fallback check-in code shown on screens at the venue. Server-only — stripped from every API response. */
+  checkInCode?: string;
   isSample: boolean;
 }
 
@@ -232,6 +234,28 @@ export interface Block {
   createdAt: string;
 }
 
+/** Login credentials, kept apart from profiles so they can never leak through profile APIs. */
+export interface Account {
+  userId: string;
+  email: string; // lowercased
+  salt: string;
+  hash: string; // scrypt
+  createdAt: string;
+}
+
+export type PostKind = "update" | "looking" | "offering";
+
+export interface Post {
+  id: string;
+  authorId: string;
+  kind: PostKind;
+  body: string;
+  tags: string[]; // skill/interest ids extracted from the text
+  eventId?: string;
+  likes: string[]; // user ids
+  createdAt: string;
+}
+
 export interface Database {
   version: number;
   seededAt: string;
@@ -245,6 +269,8 @@ export interface Database {
   missions: Mission[];
   notifications: Notification[];
   blocks: Block[];
+  accounts: Account[];
+  posts: Post[];
 }
 
 // ---------- Engine I/O ----------

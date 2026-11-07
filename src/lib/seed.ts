@@ -17,10 +17,20 @@ import type {
   Team,
 } from "./types";
 
+import crypto from "node:crypto";
 import { CROWNHACKS_ID } from "./constants";
+import { tagText } from "./ontology";
+import type { Account, Post } from "./types";
 
 export { CROWNHACKS_ID };
-export const DB_VERSION = 4;
+export const DB_VERSION = 5;
+
+/** Public demo login shown on the login page. Fictional account, clearly labeled. */
+export const DEMO_EMAIL = "demo@connected.app";
+export const DEMO_PASSWORD = "crownhacks";
+export const DEMO_USER_ID = "u_riley";
+/** Shown on screens at the venue; lets people check in when GPS is unavailable. */
+export const CROWNHACKS_CHECKIN_CODE = "CROWN26";
 
 type SkillSpec = [string, Level];
 
@@ -48,6 +58,7 @@ interface P {
 const UNCC = "UNC Charlotte";
 
 const PEOPLE: P[] = [
+  { id: DEMO_USER_ID, name: "Riley Park", pronouns: "they/them", headline: "Finance student exploring AI startups", role: "student", university: UNCC, major: "Finance", gradYear: 2027, bio: "Interested in where AI and finance meet. Has a startup idea and wants to find people to build it with.", skills: [["finance", 3], ["business-strategy", 2], ["public-speaking", 2]], interests: ["ai", "fintech", "startups"], gives: ["Financial modeling basics", "Practicing your pitch"], ask: "I want to build an AI startup but need a developer and a designer.", lookingFor: ["backend-engineer", "designer", "ml-engineer"], openTo: ["cofounder", "hackathon-team"], availability: "high" },
   { id: "u_alex", name: "Alex Rivera", pronouns: "he/him", headline: "Backend + ML engineer · loves early-stage chaos", role: "student", university: UNCC, major: "Computer Science", gradYear: 2027, bio: "Built a Python service that scores loan risk for a class project. Wants to turn hackathon projects into real startups.", skills: [["python", 3], ["backend", 3], ["machine-learning", 2], ["databases", 2], ["cloud", 1]], interests: ["ai", "startups", "fintech"], gives: ["Python and API architecture", "Reviewing backend designs"], ask: "Looking for a business-minded cofounder with a real problem to solve.", lookingFor: ["business-lead", "designer"], openTo: ["cofounder", "hackathon-team", "project"], availability: "high" },
   { id: "u_maya", name: "Maya Chen", pronouns: "she/her", headline: "Product designer · Figma + user research", role: "student", university: UNCC, major: "Art & Design (UX)", gradYear: 2026, bio: "Designed a patient check-in flow tested with 12 nurses. Happiest when a prototype turns into a real product.", skills: [["product-design", 3], ["figma", 3], ["ux-research", 3], ["ui-design", 2], ["branding", 1]], interests: ["design", "healthtech", "ai", "social-impact"], gives: ["Portfolio feedback", "Quick usability review of your prototype"], ask: "Want engineers who care about UX for a hackathon team.", lookingFor: ["frontend-engineer", "backend-engineer"], openTo: ["hackathon-team", "project", "quick-chat"], availability: "high" },
   { id: "u_jordan", name: "Jordan Patel", pronouns: "they/them", headline: "Frontend engineer · React, Next.js, motion", role: "student", university: UNCC, major: "Software Engineering", gradYear: 2027, bio: "Shipped three Next.js apps and a finance dashboard used by a student investment club.", skills: [["react", 3], ["nextjs", 3], ["typescript", 3], ["html-css", 2], ["data-viz", 1]], interests: ["fintech", "ai", "consumer", "design"], gives: ["Debugging React apps", "Next.js deployment help"], ask: "Want to join an ambitious fintech or AI hackathon project.", lookingFor: ["backend-engineer", "designer"], openTo: ["hackathon-team", "cofounder", "project"], availability: "high" },
@@ -137,6 +148,7 @@ function events(now: Date): ConnectedEvent[] {
       tags: ["ai", "cybersecurity", "biotech", "startups", "crypto", "research"],
       zones: CROWNHACKS_ZONES,
       geo: CAMPUS_GEO,
+      checkInCode: CROWNHACKS_CHECKIN_CODE,
       isSample: !crownLive,
     },
     { id: "ev_pitch", title: "Charlotte Student Pitch Night", host: "Sample event", kind: "pitch", description: "Student founders pitch early ideas to local operators and angels. Great for finding business cofounders and feedback.", start: at(5, 18), end: at(5, 21), venue: "Uptown Charlotte (sample)", area: "Uptown Charlotte", tags: ["startups", "entrepreneurship", "fintech"], zones: genericZones("zp"), geo: { lat: 35.2271, lng: -80.8431, radiusM: 600, label: "Uptown Charlotte" }, isSample: true },
@@ -148,6 +160,7 @@ function events(now: Date): ConnectedEvent[] {
 }
 
 const CROWN_ZONE: Record<string, string> = {
+  u_riley: "z_mixer",
   u_alex: "z_mixer", u_maya: "z_mixer", u_jordan: "z_main", u_priya: "z_main", u_marcus: "z_mentor", u_elena: "z_mentor",
   u_sam: "z_mixer", u_leila: "z_mixer", u_chris: "z_main", u_taylor: "z_food", u_diego: "z_main", u_aisha: "z_main",
   u_ben: "z_quiet", u_hannah: "z_main", u_noah: "z_mixer", u_grace: "z_main", u_omar: "z_quiet", u_zoe: "z_food",
@@ -302,6 +315,26 @@ export function buildSeed(now = new Date()): Database {
   const missions: Mission[] = [];
   const notifications: Notification[] = [];
 
+  const salt = "connected-demo-salt";
+  const accounts: Account[] = [
+    { userId: DEMO_USER_ID, email: DEMO_EMAIL, salt, hash: crypto.scryptSync(DEMO_PASSWORD, salt, 64).toString("hex"), createdAt: iso(-60 * 24) },
+  ];
+
+  const post = (authorId: string, kind: Post["kind"], body: string, minsAgo: number, likers: string[] = []): Post => {
+    const t = tagText(body);
+    return { id: nid("p"), authorId, kind, body, tags: [...t.skills, ...t.interests].slice(0, 6), eventId: CROWNHACKS_ID, likes: likers, createdAt: iso(-minsAgo) };
+  };
+  const posts: Post[] = [
+    post("u_sam", "looking", "Our savings coach for first-gen students has 40 pilot users. Need a backend engineer + an AI/ML engineer this weekend. DM me 👋", 25, ["u_aisha", "u_taylor", "u_isabella"]),
+    post("u_maya", "offering", "Doing 10-minute UX reviews of your prototype at the team-formation mixer until 4. Bring a Figma link.", 40, ["u_jordan", "u_leila", "u_noah", "u_zoe"]),
+    post("u_leila", "looking", "Nursing student here — hospital shift scheduling is broken. Looking for builders who want a real healthcare problem.", 55, ["u_ava", "u_maya"]),
+    post("u_kevin", "offering", "Mentor corner all afternoon. System design, debugging, or just getting unstuck — come say hi.", 70, ["u_noah", "u_hannah", "u_ethan", "u_emily", "u_alex"]),
+    post("u_grace", "update", "VariantLens team formed in 20 minutes thanks to the mixer 🧬 Grace + Ravi + Nina. Bioinformatics track, here we come.", 90, ["u_ravi", "u_nina", "u_elena"]),
+    post("u_noah", "looking", "First hackathon! I know a little JavaScript and I'm good at writing demo scripts. Any team need an extra pair of hands?", 110, ["u_kevin", "u_emily"]),
+    post("u_diego", "looking", "Have a Jetson and a rover. Need someone who does computer vision or React for a Most Technical attempt.", 130, ["u_lucas"]),
+    post("u_marcus", "offering", "Banking internship questions? I'm at the mentor corner until 3 — resumes, superdays, anything.", 150, ["u_isabella", "u_aisha"]),
+  ];
+
   return {
     version: DB_VERSION,
     seededAt: now.toISOString(),
@@ -315,6 +348,8 @@ export function buildSeed(now = new Date()): Database {
     missions,
     notifications,
     blocks: [],
+    accounts,
+    posts,
   };
 
   function mkReq(

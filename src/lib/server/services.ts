@@ -14,10 +14,12 @@ import type {
   MissionKind,
   Notification,
   OutcomeRating,
+  Post,
   Profile,
   PublicProfile,
   Team,
 } from "../types";
+import { tagText } from "../ontology";
 import { draftIntro, understandGoal, type AiSource } from "./ai";
 import { getDb, mutate, newId } from "./store";
 
@@ -594,7 +596,7 @@ export function listEvents(me: Profile) {
     const p = db.profiles.find((x) => x.id === tp.userId);
     if (p) people[p.id] = pub(db, me, p);
   }
-  return { events: recs, people };
+  return { events: recs.map((r) => ({ ...r, event: publicEvent(r.event) })), people };
 }
 
 export function eventDetail(me: Profile, id: string) {
@@ -634,7 +636,7 @@ export function eventDetail(me: Profile, id: string) {
       };
     });
   return {
-    event: ev,
+    event: publicEvent(ev),
     membership: mine,
     canBrowse,
     participants,
@@ -648,11 +650,16 @@ export function eventDetail(me: Profile, id: string) {
 export function joinEvent(
   me: Profile,
   id: string,
-  input: { optIn: boolean; zone?: string | null; status?: (Omit<LiveStatus, "until"> & { minutes: number }) | null; leave?: boolean; checkIn?: boolean },
+  input: { optIn: boolean; zone?: string | null; status?: (Omit<LiveStatus, "until"> & { minutes: number }) | null; leave?: boolean; checkIn?: boolean; checkInCode?: string },
 ) {
   return mutate((db) => {
     const ev = db.events.find((e) => e.id === id);
     if (!ev) throw new ApiError(404, "Event not found");
+    if (input.checkInCode !== undefined) {
+      const ok = Boolean(ev.checkInCode) && input.checkInCode.trim().toUpperCase() === ev.checkInCode!.toUpperCase();
+      if (!ok) throw new ApiError(400, "That code doesn't match. Check the screen at the venue.");
+      input = { ...input, checkIn: true };
+    }
     const idx = db.memberships.findIndex((m) => m.eventId === id && m.userId === me.id);
     if (input.leave) {
       if (idx >= 0) db.memberships.splice(idx, 1);
@@ -982,6 +989,114 @@ export function markAllRead(me: Profile) {
     for (const n of db.notifications) if (n.userId === me.id) n.read = true;
     return { ok: true };
   });
+}
+
+// ---------- feed (LinkedIn-style) ----------
+
+export type FeedItem =
+  | { type: "post"; id: string; at: string; post: Post; author: PublicProfile; likes: number; likedByMe: boolean; fit: number | null; isMine: boolean }
+  | { type: "team"; id: string; at: string; teamId: string; title: string; status: "forming" | "formed"; members: PublicProfile[]; openRoles: { roleId: string; label: string; myFit: number }[]; ownerId: string }
+  | { type: "checkins"; id: string; at: string; eventId: string; eventTitle: string; people: PublicProfile[]; count: number }
+  | { type: "connected"; id: string; at: string; other: PublicProfile };
+
+export function feed(me: Profile): { items: FeedItem[] } {
+  const db = getDb();
+  const ctx = matchCtx(db);
+  const need = buildNeed(me);
+  const items: FeedItem[] = [];
+
+  for (const p of db.posts) {
+    const author = db.profiles.find((x) => x.id === p.authorId);
+    if (!author || !canSee(db, me, author)) continue;
+    items.push({
+      type: "post",
+      id: p.id,
+      at: p.createdAt,
+      post: p,
+      author: pub(db, me, author),
+      likes: p.likes.length,
+      likedByMe: p.likes.includes(me.id),
+      fit: author.id === me.id ? null : scoreCandidate(me, author, need, ctx).score,
+      isMine: author.id === me.id,
+    });
+  }
+
+  for (const t of db.teams) {
+    const visible = t.members
+      .filter((m) => m.status === "owner" || m.status === "accepted")
+      .map((m) => db.profiles.find((x) => x.id === m.userId))
+      .filter((p): p is Profile => Boolean(p) && canSee(db, me, p!));
+    if (!visible.length) continue;
+    items.push({
+      type: "team",
+      id: `team_${t.id}`,
+      at: t.createdAt,
+      teamId: t.id,
+      title: t.title,
+      status: t.status,
+      members: visible.map((p) => pub(db, me, p)),
+      openRoles: t.status === "forming" && t.ownerId !== me.id ? t.openRoles.map((r) => ({ roleId: r, label: roleLabel(r), myFit: Math.round(roleCoverage(me, r).coverage * 100) })) : [],
+      ownerId: t.ownerId,
+    });
+  }
+
+  for (const ev of db.events) {
+    const here = db.memberships
+      .filter((m) => m.eventId === ev.id && m.optIn && m.checkedInAt && m.userId !== me.id)
+      .map((m) => ({ m, p: db.profiles.find((x) => x.id === m.userId) }))
+      .filter((x): x is { m: (typeof db.memberships)[number]; p: Profile } => Boolean(x.p) && canSee(db, me, x.p!));
+    if (!here.length) continue;
+    const latest = here.map((x) => x.m.checkedInAt!).sort().at(-1)!;
+    items.push({ type: "checkins", id: `checkins_${ev.id}`, at: latest, eventId: ev.id, eventTitle: ev.title, people: here.slice(0, 6).map((x) => pub(db, me, x.p)), count: here.length });
+  }
+
+  for (const r of db.requests) {
+    if (r.status !== "accepted" || (r.fromId !== me.id && r.toId !== me.id)) continue;
+    const other = db.profiles.find((x) => x.id === (r.fromId === me.id ? r.toId : r.fromId));
+    if (other) items.push({ type: "connected", id: `conn_${r.id}`, at: r.respondedAt ?? r.createdAt, other: pub(db, me, other) });
+  }
+
+  items.sort((a, b) => b.at.localeCompare(a.at));
+  return { items: items.slice(0, 40) };
+}
+
+export function createPost(me: Profile, input: { body: string; kind: Post["kind"]; eventId?: string }) {
+  const text = input.body.trim();
+  if (text.length < 3) throw new ApiError(400, "Write a little more.");
+  if (text.length > 600) throw new ApiError(400, "Keep posts under 600 characters.");
+  return mutate((db) => {
+    const t = tagText(text);
+    const p: Post = { id: newId("p"), authorId: me.id, kind: input.kind, body: text, tags: [...t.skills, ...t.interests].slice(0, 6), eventId: input.eventId, likes: [], createdAt: nowIso() };
+    db.posts.push(p);
+    return p;
+  });
+}
+
+export function toggleLike(me: Profile, postId: string) {
+  return mutate((db) => {
+    const p = db.posts.find((x) => x.id === postId);
+    if (!p) throw new ApiError(404, "Post not found");
+    p.likes = p.likes.includes(me.id) ? p.likes.filter((x) => x !== me.id) : [...p.likes, me.id];
+    if (p.likes.includes(me.id) && p.authorId !== me.id) {
+      notify(db, { userId: p.authorId, kind: "system", title: `${me.name} is interested in your post`, body: p.body.slice(0, 100), href: `/people/${me.id}` });
+    }
+    return { likes: p.likes.length, likedByMe: p.likes.includes(me.id) };
+  });
+}
+
+export function deletePost(me: Profile, postId: string) {
+  return mutate((db) => {
+    const i = db.posts.findIndex((x) => x.id === postId && x.authorId === me.id);
+    if (i < 0) throw new ApiError(404, "Post not found");
+    db.posts.splice(i, 1);
+    return { ok: true };
+  });
+}
+
+/** Events as clients may see them: the venue check-in code never leaves the server. */
+export function publicEvent<T extends { checkInCode?: string }>(ev: T): Omit<T, "checkInCode"> {
+  const { checkInCode: _code, ...rest } = ev;
+  return rest;
 }
 
 // ---------- profile ----------
