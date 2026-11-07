@@ -16,7 +16,7 @@ import { mutate } from "./store";
 const MAX_BYTES = 2_000_000;
 const MAX_EVENTS = 40;
 const WINDOW_DAYS = 120;
-const PER_HOUR = 10;
+const PER_HOUR = 20;
 const recent = new Map<string, number[]>();
 
 // ---------- Safe fetch (SSRF guard) ----------
