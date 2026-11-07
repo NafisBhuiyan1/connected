@@ -15,6 +15,12 @@ import type { ConnectedEvent, PublicProfile } from "@/lib/types";
 interface EventsResponse {
   events: EventRecommendation[];
   people: Record<string, PublicProfile>;
+  feeds?: { name: string; ok: boolean; syncedAt?: string; count?: number }[];
+}
+
+function ago(iso: string): string {
+  const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60_000));
+  return m < 1 ? "just now" : m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`;
 }
 
 const KIND_LABEL: Record<ConnectedEvent["kind"], string> = {
@@ -41,7 +47,10 @@ export default function EventsPage() {
   const { data, error, loading, reload } = useApi<EventsResponse>("/api/events");
   const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
   const [kind, setKind] = useState<ConnectedEvent["kind"] | "all">("all");
-  const all = data?.events ?? [];
+  const [realOnly, setRealOnly] = useState(false);
+  const all = (data?.events ?? []).filter((e) => !realOnly || !e.event.isSample);
+  const synced = (data?.feeds ?? []).filter((f) => f.syncedAt);
+  const realCount = (data?.events ?? []).filter((e) => !e.event.isSample).length;
   const counts = all.reduce<Partial<Record<ConnectedEvent["kind"], number>>>((acc, e) => ({ ...acc, [e.event.kind]: (acc[e.event.kind] ?? 0) + 1 }), {});
   const events = kind === "all" ? all : all.filter((e) => e.event.kind === kind);
   const dist = (e: EventRecommendation) => (pos && e.event.geo ? haversineM(pos, e.event.geo) : undefined);
@@ -64,8 +73,31 @@ export default function EventsPage() {
       />
       {pos ? <p className="-mt-3 mb-4 text-[12px] text-muted">Distances are computed on this device — your location isn&apos;t sent anywhere.</p> : null}
 
-      {all.length ? (
+      {synced.length ? (
+        <div className="-mt-2 mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-muted">
+          <span className="inline-flex items-center gap-1.5 font-medium text-emerald-700">
+            <span className="relative flex size-2">
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-70" />
+              <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+            </span>
+            Live from {synced.map((f) => f.name).join(" + ")}
+          </span>
+          <span>synced {ago(synced.map((f) => f.syncedAt!).sort().at(-1)!)}</span>
+        </div>
+      ) : null}
+
+      {data?.events.length ? (
         <div className="[scrollbar-width:none] -mx-4 mb-5 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
+          <button
+            onClick={() => setRealOnly((v) => !v)}
+            className={cx(
+              "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-[13px] font-medium transition-colors",
+              realOnly ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100",
+            )}
+          >
+            <CheckCircle2 className="size-3.5" /> Real only
+            <span className={cx("text-[11.5px] tabular-nums", realOnly ? "text-white/80" : "text-emerald-700/70")}>{realCount}</span>
+          </button>
           {(["all", ...(Object.keys(KIND_LABEL) as ConnectedEvent["kind"][]).filter((k) => counts[k])] as const).map((k) => {
             const on = kind === k;
             const Icon = k === "all" ? CalendarDays : COVER[k].icon;

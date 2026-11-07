@@ -328,6 +328,18 @@ export interface Database {
   views: ProfileView[];
   lounge: LoungeMessage[];
   photos: EventPhoto[];
+  /** Background sync state of the public calendar feeds. */
+  feeds?: FeedStatus[];
+}
+
+export interface FeedStatus {
+  url: string;
+  ok: boolean;
+  attemptedAt: string;
+  syncedAt?: string;
+  count?: number;
+  scanned?: number;
+  error?: string;
 }
 
 // ---------- Engine I/O ----------

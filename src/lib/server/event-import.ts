@@ -5,9 +5,9 @@ import net from "node:net";
 import { classifyKind, dedupeSeries, nextOccurrence, parseIcs, relevance, sameEvent, tagEvent, type IcsEvent } from "../ics";
 import { SUGGESTED_FEEDS } from "../constants";
 import { genericZones, VENUES, type VenueKey } from "../seed";
-import type { ConnectedEvent, Profile } from "../types";
+import type { ConnectedEvent, FeedStatus, Profile } from "../types";
 import { ApiError } from "./services";
-import { mutate } from "./store";
+import { getDb, mutate } from "./store";
 
 // Pull real events from public calendar feeds (.ics / webcal) that organizers publish —
 // university calendars, Meetup / Luma / Google Calendar exports, club calendars.
@@ -55,9 +55,10 @@ async function fetchCalendar(raw: string): Promise<string> {
     const res = await fetch(url, {
       redirect: "manual",
       headers: { Accept: "text/calendar, text/plain;q=0.8, */*;q=0.1", "User-Agent": "Connected-CrownHacks/1.0 (calendar import)" },
-      signal: AbortSignal.timeout(10_000),
-    }).catch(() => {
-      throw new ApiError(502, "That calendar didn't respond. Try again.");
+      // Campus calendars are ~1 MB and sometimes slow; the timeout covers the whole download.
+      signal: AbortSignal.timeout(25_000),
+    }).catch((e: Error) => {
+      throw new ApiError(502, `That calendar didn't respond (${e.name === "TimeoutError" ? "timed out" : "network error"}). Try again.`);
     });
     if (res.status >= 300 && res.status < 400) {
       const loc = res.headers.get("location");
@@ -73,7 +74,9 @@ async function fetchCalendar(raw: string): Promise<string> {
     const chunks: Uint8Array[] = [];
     let size = 0;
     for (;;) {
-      const { done, value } = await reader.read();
+      const { done, value } = await reader.read().catch(() => {
+        throw new ApiError(502, "The calendar download was interrupted (slow server). Try again.");
+      });
       if (done) break;
       size += value.byteLength;
       if (size > MAX_BYTES) {
@@ -182,6 +185,62 @@ function rateLimit(userId: string) {
 export async function importCalendar(me: Profile, input: { url?: string; ics?: string }, now = new Date()): Promise<ImportSummary> {
   if (!input.url && !input.ics) throw new ApiError(400, "Paste a calendar link or upload an .ics file.");
   rateLimit(me.id);
+  const result = await importFromSource(input, me.id, now);
+  if (input.url) recordFeed(SUGGESTED_FEEDS.find((f) => input.url!.replace(/^webcals?:\/\//i, "https://") === f.url)?.url, result, now);
+  return result;
+}
+
+// ---------- Background sync of the public campus feeds ----------
+// So the app always shows real, current UNC Charlotte events without anyone pressing Import.
+// Runs off the request path (fire-and-forget), at most every 6 hours per feed, retries failures after 30 min.
+
+const SYNC_EVERY_MS = 6 * 3_600_000;
+const RETRY_MS = 30 * 60_000;
+const gs = globalThis as unknown as { __feedSync?: Promise<void> | null };
+
+function recordFeed(url: string | undefined, result: ImportSummary | Error, now: Date) {
+  if (!url) return;
+  const status: FeedStatus =
+    result instanceof Error
+      ? { url, ok: false, attemptedAt: now.toISOString(), error: result.message.slice(0, 200) }
+      : { url, ok: true, attemptedAt: now.toISOString(), syncedAt: now.toISOString(), count: result.events.length, scanned: result.scanned };
+  mutate((db) => {
+    const prev = db.feeds?.find((f) => f.url === url);
+    // A failed retry keeps the last good sync time so the UI can still say "synced 3h ago".
+    db.feeds = [...(db.feeds ?? []).filter((f) => f.url !== url), status.ok ? status : { ...status, syncedAt: prev?.syncedAt, count: prev?.count }];
+  });
+}
+
+export function feedStatus(): (FeedStatus & { name: string })[] {
+  const db = getDb();
+  return SUGGESTED_FEEDS.flatMap((f) => {
+    const s = db.feeds?.find((x) => x.url === f.url);
+    return s ? [{ ...s, name: f.name }] : [];
+  });
+}
+
+export function kickFeedSync(now = new Date()): void {
+  if (process.env.FEED_SYNC === "off" || gs.__feedSync) return;
+  const db = getDb();
+  const due = SUGGESTED_FEEDS.filter((f) => {
+    const s = db.feeds?.find((x) => x.url === f.url);
+    return !s || now.getTime() - Date.parse(s.attemptedAt) > (s.ok ? SYNC_EVERY_MS : RETRY_MS);
+  });
+  if (!due.length) return;
+  gs.__feedSync = (async () => {
+    for (const f of due) {
+      try {
+        recordFeed(f.url, await importFromSource({ url: f.url }, "system", new Date()), new Date());
+      } catch (e) {
+        recordFeed(f.url, e as Error, new Date());
+      }
+    }
+  })().finally(() => {
+    gs.__feedSync = null;
+  });
+}
+
+async function importFromSource(input: { url?: string; ics?: string }, importedBy: string, now: Date): Promise<ImportSummary> {
   const text = input.ics ?? (await fetchCalendar(input.url!));
   if (text.length > MAX_BYTES) throw new ApiError(413, "That calendar is too big (2 MB max).");
   if (!/BEGIN:VCALENDAR/i.test(text)) throw new ApiError(400, "That doesn't look like a calendar (.ics) file. Look for “Subscribe”, “Export” or “iCal” on the events page.");
@@ -262,7 +321,7 @@ export async function importCalendar(me: Profile, input: { url?: string; ics?: s
         geo: place.geo,
         isSample: false,
         link: ev.url,
-        source: { kind: "ics", feed, uid: ev.uid, importedBy: me.id, importedAt: now.toISOString(), approximate: place.approximate || undefined },
+        source: { kind: "ics", feed, uid: ev.uid, importedBy, importedAt: now.toISOString(), approximate: place.approximate || undefined },
       };
       const idx = db.events.findIndex((e) => e.id === id);
       if (idx >= 0) {
