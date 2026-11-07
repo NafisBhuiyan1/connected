@@ -41,6 +41,9 @@ Safety is built into the backend (`liveMap()` in `services.ts`, covered by `test
 | **Team room** (`/teams/[id]`) | Invite status, accept/decline, chat, next-step checklist, meeting-spot suggestions, role coverage. A team becomes "formed" once the invites are answered. |
 | **Discover** (`/discover`) | Natural-language search → interpretation panel → explainable, role-diverse, reciprocal matches. |
 | **Events + zone map** (`/events`, `/events/[id]`) | Opt-in networking space, an approximate **zone map** (no GPS pins), time-boxed live status ("open to chat until 4 PM", with a request cap), **location check-in**, open roles on forming teams, and **organizer insights** (skill supply vs. demand, unteamed people, rate of useful conversations). |
+| **Real events from calendars** (`/events` → Import) | Paste any public iCalendar link (Luma, Meetup, Google Calendar, campus calendars) or upload an `.ics`. One tap imports the real **UNC Charlotte Events** and **NinerEngage** feeds. A dependency-free RFC 5545 parser handles folding, time zones, all-day events, durations, recurrence, `GEO` and `CATEGORIES`. Big feeds (1,000+ events) are filtered to networking-worthy ones (career, hackathon, pitch, talks, tech topics), repeats of a series collapse, duplicates across feeds/seeded events are caught, and venues are matched to precise coordinates so events land on the map. The fetch is SSRF-guarded (public hosts only, re-checked on every redirect, 2 MB cap). |
+| **Event lounge** (`/events/[id]#lounge`) | Public chat per event plus an attendee photo wall (members only; image type checked by magic bytes; report/delete). |
+| **Connected accounts** (`/profile`) | Link LinkedIn, Instagram, GitHub, X, portfolio. **GitHub import** reads public repos (languages, topics) into skill suggestions with evidence; **LinkedIn/résumé import** tags pasted text against the skill ontology. Nothing is saved until you pick suggestions. |
 | **Connections** (`/connections`) | Requests that require a specific ask, accept with a meeting spot, decline, withdraw, message threads, outcome rating, team invites. |
 | **Quiet interest** | Double opt-in: the other person only finds out if they also want to meet you. |
 | **Missions** (`/missions`) | Goal → target roles → measurable progress: discovered → reached out → accepted → useful conversation or team formed. |
@@ -123,7 +126,8 @@ f(T) = Σ_r w_r · max_{p∈T∪owner} cov(p,r) / Σ w_r      weighted role cove
 
 ## Honest limitations
 
-- Identity is a signed cookie (demo-grade, no passwords). Production should use Supabase Auth or OAuth behind the same `currentUser()` boundary.
+- Accounts use email + scrypt-hashed passwords and a signed session cookie. Production should add email verification / OAuth behind the same `currentUser()` boundary.
+- Calendar import resolves DNS before fetching, but a DNS-rebinding attacker could still race the check; production should pin the resolved IP.
 - The JSON store persists on one machine. On Vercel it lives in `/tmp` and resets on cold starts, so use `supabase/schema.sql` for a real deployment.
 - "Live" updates come from polling every 3–5 seconds, not websockets.
 - Location check-in is self-attested by the client: a determined user could fake it. It's a convenience signal, not a security boundary.
@@ -139,6 +143,9 @@ src/lib/engine/team.ts       team optimizer (exact / greedy + local search) + ro
 src/lib/engine/events.ts     event ranking + organizer insights
 src/lib/server/ai.ts         Claude integration with structured outputs + fallback
 src/lib/server/services.ts   privacy, anti-spam, teams, missions, radar, graph
+src/lib/ics.ts               iCalendar parser, event-type classifier, relevance filter
+src/lib/server/event-import.ts  SSRF-safe calendar fetch, venue matching, dedupe
+src/lib/server/importers.ts  GitHub + LinkedIn/résumé skill import
 tests/                       engine tests + optimality benchmark
 supabase/schema.sql          production schema with row-level security
 ```
