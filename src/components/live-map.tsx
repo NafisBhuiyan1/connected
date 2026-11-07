@@ -41,35 +41,34 @@ export interface MapCrowd {
 
 const STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 
-/** Recolor a light vector style into a vibrant neon night palette and add 3D buildings. */
+/** Recolor the vector style into a clean white + purple palette and add soft 3D buildings. */
 function neonify(map: MLMap) {
   const style = map.getStyle();
   for (const layer of style.layers ?? []) {
     const id = layer.id;
     try {
-      if (layer.type === "background") map.setPaintProperty(id, "background-color", "#070717");
+      if (layer.type === "background") map.setPaintProperty(id, "background-color", "#f7f5fe");
       else if (layer.type === "fill") {
-        if (/water|ocean|lake|river/.test(id)) map.setPaintProperty(id, "fill-color", "#0b2547");
-        else if (/park|green|grass|wood|forest|landcover|golf|pitch|cemetery|garden/.test(id)) map.setPaintProperty(id, "fill-color", "#0a2a24");
+        if (/water|ocean|lake|river/.test(id)) map.setPaintProperty(id, "fill-color", "#cfe0fb");
+        else if (/park|green|grass|wood|forest|landcover|golf|pitch|cemetery|garden/.test(id)) map.setPaintProperty(id, "fill-color", "#dcf3e4");
         else if (/building/.test(id)) map.setLayoutProperty(id, "visibility", "none");
-        else map.setPaintProperty(id, "fill-color", "#0c0c24");
+        else map.setPaintProperty(id, "fill-color", "#f1eefb");
       } else if (layer.type === "line") {
-        if (/water|river|stream|canal/.test(id)) map.setPaintProperty(id, "line-color", "#13407a");
+        if (/water|river|stream|canal/.test(id)) map.setPaintProperty(id, "line-color", "#aac8f5");
         else if (/motorway|trunk|primary/.test(id)) {
-          map.setPaintProperty(id, "line-color", "#8b6cff");
-          map.setPaintProperty(id, "line-opacity", 0.75);
+          map.setPaintProperty(id, "line-color", "#b69cf7");
+          map.setPaintProperty(id, "line-opacity", 0.95);
         } else if (/secondary|tertiary/.test(id)) {
-          map.setPaintProperty(id, "line-color", "#5b4bd6");
-          map.setPaintProperty(id, "line-opacity", 0.6);
+          map.setPaintProperty(id, "line-color", "#d9cdfb");
         } else if (/road|street|minor|service|path|track|bridge|tunnel|link/.test(id)) {
-          map.setPaintProperty(id, "line-color", "#2a2766");
-        } else if (/rail/.test(id)) map.setPaintProperty(id, "line-color", "#2b2a55");
-        else if (/boundary|admin/.test(id)) map.setPaintProperty(id, "line-color", "#3a2d6e");
+          map.setPaintProperty(id, "line-color", "#ffffff");
+        } else if (/rail/.test(id)) map.setPaintProperty(id, "line-color", "#d7d2e8");
+        else if (/boundary|admin/.test(id)) map.setPaintProperty(id, "line-color", "#c9bdf0");
       } else if (layer.type === "symbol") {
-        map.setPaintProperty(id, "text-color", "#c3bff5");
-        map.setPaintProperty(id, "text-halo-color", "#070717");
-        map.setPaintProperty(id, "text-halo-width", 1.3);
-        if (/poi/.test(id)) map.setPaintProperty(id, "icon-opacity", 0.45);
+        map.setPaintProperty(id, "text-color", "#4c3a8f");
+        map.setPaintProperty(id, "text-halo-color", "#ffffff");
+        map.setPaintProperty(id, "text-halo-width", 1.4);
+        if (/poi/.test(id)) map.setPaintProperty(id, "icon-opacity", 0.55);
       } else if (layer.type === "fill-extrusion") {
         map.setLayoutProperty(id, "visibility", "none");
       }
@@ -86,10 +85,10 @@ function neonify(map: MLMap) {
       "source-layer": "building",
       minzoom: 13.5,
       paint: {
-        "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 8], 0, "#17153d", 25, "#2b2580", 80, "#5a46d8"],
+        "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 8], 0, "#ebe5fd", 25, "#d8cbfb", 80, "#b9a2f6"],
         "fill-extrusion-height": ["coalesce", ["get", "render_height"], 8],
         "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
-        "fill-extrusion-opacity": 0.82,
+        "fill-extrusion-opacity": 0.9,
       },
     });
   }
@@ -160,6 +159,7 @@ export function LiveMap({
   flyTo,
   threeD,
   myPosition,
+  bottomPadding = 270,
 }: {
   center: { lat: number; lng: number };
   events: MapEvent[];
@@ -172,6 +172,8 @@ export function LiveMap({
   flyTo?: { lat: number; lng: number; zoom?: number; key: number } | null;
   threeD: boolean;
   myPosition?: { lat: number; lng: number } | null;
+  /** Space reserved at the bottom for the people sheet, so the focus stays visible. */
+  bottomPadding?: number;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const map = useRef<MLMap | null>(null);
@@ -210,8 +212,6 @@ export function LiveMap({
         map.current = m;
         m.on("load", () => {
           neonify(m);
-          // Keep the action area above the bottom sheet of people cards.
-          m.setPadding({ top: 110, bottom: window.innerWidth < 768 ? 330 : 270, left: 0, right: 0 });
           setReady(true);
         });
         m.on("error", (e) => {
@@ -265,6 +265,12 @@ export function LiveMap({
     map.current?.easeTo({ pitch: threeD ? 55 : 0, bearing: threeD ? -20 : 0, duration: 700 });
   }, [threeD]);
 
+  // Keep the focus area above whatever the bottom sheet currently covers.
+  useEffect(() => {
+    if (!ready) return;
+    map.current?.easeTo({ padding: { top: 110, bottom: bottomPadding, left: 0, right: 0 }, duration: 450 });
+  }, [bottomPadding, ready]);
+
   // "You" dot: only from this device's own position, never sent anywhere.
   useEffect(() => {
     const m = map.current;
@@ -278,7 +284,7 @@ export function LiveMap({
   }, [myPosition, ready]);
 
   return (
-    <div className="relative size-full overflow-hidden bg-[#070717]">
+    <div className="relative size-full overflow-hidden bg-[#f7f5fe]">
       <div ref={box} className="size-full" />
       {!ready && !failed ? (
         <div className="absolute inset-0 flex items-center justify-center">
@@ -286,7 +292,7 @@ export function LiveMap({
         </div>
       ) : null}
       {failed ? (
-        <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-white/70">
+        <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-muted">
           Map tiles couldn&apos;t load (offline?). The people list below still works.
         </div>
       ) : null}

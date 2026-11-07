@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { Box, CalendarDays, Check, ChevronRight, Ghost, Layers, LocateFixed, MapPinCheck, Send, ShieldCheck, SlidersHorizontal, Sparkles, X } from "lucide-react";
+import { Box, CalendarDays, Check, ChevronDown, ChevronRight, ChevronUp, Ghost, Layers, LocateFixed, MapPinCheck, MessageCircle, Send, ShieldCheck, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LiveMap, type MapCrowd, type MapEvent, type MapPersonPin } from "@/components/live-map";
@@ -53,9 +53,15 @@ export default function NearbyPage() {
   const [fly, setFly] = useState<{ lat: number; lng: number; zoom?: number; key: number } | null>(null);
   const [threeD, setThreeD] = useState(true);
   const [connectTo, setConnectTo] = useState<MapPerson | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const { state: geo, locate } = useDevicePosition();
   const [myPos, setMyPos] = useState<{ lat: number; lng: number } | null>(null);
   const rail = useRef<HTMLDivElement>(null);
+
+  // Desktop has room for the people rail; phones start with the map clear.
+  useEffect(() => {
+    if (window.innerWidth >= 768) setSheetOpen(true);
+  }, []);
 
   const people = useMemo(() => {
     const f = FILTERS.find((x) => x.id === filter)!;
@@ -72,8 +78,9 @@ export default function NearbyPage() {
 
   useEffect(() => {
     if (!selected || !rail.current) return;
-    rail.current.querySelector(`[data-id="${selected}"]`)?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-  }, [selected]);
+    const t = setTimeout(() => rail.current?.querySelector(`[data-id="${selected}"]`)?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" }), 120);
+    return () => clearTimeout(t);
+  }, [selected, sheetOpen]);
 
   function selectPerson(id: string) {
     const p = people.find((x) => x.profile.id === id);
@@ -81,6 +88,7 @@ export default function NearbyPage() {
     play("pop");
     setSelectedEvent(null);
     setSelected(id);
+    setSheetOpen(true);
     setFly({ lat: p.lat, lng: p.lng, zoom: 17.3, key: Date.now() });
   }
 
@@ -118,9 +126,10 @@ export default function NearbyPage() {
           flyTo={fly}
           threeD={threeD}
           myPosition={myPos}
+          bottomPadding={sheetOpen ? 270 : 90}
         />
       ) : (
-        <div className="flex size-full items-center justify-center bg-[#070717]">
+        <div className="flex size-full items-center justify-center bg-brand-50">
           <div className="cx-radar" />
         </div>
       )}
@@ -130,7 +139,7 @@ export default function NearbyPage() {
         <div className="pointer-events-auto mx-auto flex max-w-3xl flex-col gap-2">
           <div className="flex items-center gap-2">
             <div className="glass flex min-w-0 flex-1 items-center gap-2 rounded-2xl px-3 py-2">
-              <span className={cx("size-2 shrink-0 rounded-full", focusEvent?.live ? "bg-emerald-400 shadow-[0_0_10px_#34d399]" : "bg-white/40")} />
+              <span className={cx("size-2 shrink-0 rounded-full", focusEvent?.live ? "bg-emerald-500 shadow-[0_0_8px_#34d399]" : "bg-faint")} />
               <select
                 value={data?.focus.id ?? ""}
                 onChange={(e) => {
@@ -139,19 +148,22 @@ export default function NearbyPage() {
                   const ev = data?.events.find((x) => x.id === e.target.value);
                   if (ev) setFly({ lat: ev.lat, lng: ev.lng, zoom: 16.2, key: Date.now() });
                 }}
-                className="min-w-0 flex-1 cursor-pointer truncate bg-transparent text-[14px] font-semibold text-white outline-none"
+                className="min-w-0 flex-1 cursor-pointer truncate bg-transparent text-[14px] font-semibold text-ink outline-none"
                 aria-label="Event"
               >
                 {switchable.map((e) => (
-                  <option key={e.id} value={e.id} className="bg-[#0d0d16]">
+                  <option key={e.id} value={e.id}>
                     {e.title}
                     {e.live ? " · live" : ""}
                   </option>
                 ))}
               </select>
-              <span className="shrink-0 text-[12px] text-white/60">{data ? `${people.length} here` : ""}</span>
+              <span className="shrink-0 text-[12px] text-muted">{data ? `${people.length} here` : ""}</span>
             </div>
-            <Link href="/preferences" aria-label="Map preferences" className="glass flex size-11 shrink-0 items-center justify-center rounded-2xl text-white">
+            <Link href={`/events/${data?.focus.id ?? ""}#lounge`} aria-label="Event chat" className="glass flex size-11 shrink-0 items-center justify-center rounded-2xl text-brand-700">
+              <MessageCircle className="size-[18px]" />
+            </Link>
+            <Link href="/preferences" aria-label="Map preferences" className="glass flex size-11 shrink-0 items-center justify-center rounded-2xl text-ink-2">
               <SlidersHorizontal className="size-[18px]" />
             </Link>
           </div>
@@ -164,8 +176,8 @@ export default function NearbyPage() {
                   setFilter(f.id);
                 }}
                 className={cx(
-                  "glass shrink-0 rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors",
-                  filter === f.id ? "!bg-white text-[#0b0b1e]" : "text-white/85",
+                  "shrink-0 rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors",
+                  filter === f.id ? "bg-brand-600 text-white shadow-sm" : "glass text-ink-2",
                 )}
               >
                 {f.label}
@@ -177,59 +189,70 @@ export default function NearbyPage() {
 
       {/* Right controls */}
       <div className="absolute top-32 right-3 flex flex-col gap-2 sm:right-4">
-        <button onClick={() => setThreeD((v) => !v)} className="glass flex size-11 items-center justify-center rounded-2xl text-white" aria-label="Toggle 3D">
+        <button onClick={() => setThreeD((v) => !v)} className="glass flex size-11 items-center justify-center rounded-2xl text-ink-2" aria-label="Toggle 3D">
           {threeD ? <Layers className="size-[18px]" /> : <Box className="size-[18px]" />}
         </button>
-        <button onClick={locateMe} className="glass flex size-11 items-center justify-center rounded-2xl text-white" aria-label="Show my position (stays on this device)">
-          <LocateFixed className={cx("size-[18px]", geo.status === "locating" && "animate-pulse")} />
+        <button onClick={locateMe} className="glass flex size-11 items-center justify-center rounded-2xl text-ink-2" aria-label="Show my position (stays on this device)">
+          <LocateFixed className={cx("size-[18px]", geo.status === "locating" && "animate-pulse text-brand-600")} />
         </button>
       </div>
 
       {/* Not visible states (not opted in / event not live) */}
       {data && !data.people.length && !data.crowds.length ? (
         <div className="absolute inset-x-0 top-36 flex justify-center px-4">
-          <div className="glass max-w-sm rounded-2xl p-4 text-center text-white">
-            <p className="text-[14px] font-semibold">{data.me.reason}</p>
-            <Link href={`/events/${data.focus.id}`} className="mt-3 inline-flex items-center gap-1 rounded-xl bg-white px-3.5 py-2 text-[13px] font-semibold text-[#0b0b1e]">
+          <div className="glass max-w-sm rounded-2xl p-4 text-center">
+            <p className="text-[14px] font-semibold text-ink">{data.me.reason}</p>
+            <Link href={`/events/${data.focus.id}`} className="mt-3 inline-flex items-center gap-1 rounded-xl bg-brand-600 px-3.5 py-2 text-[13px] font-semibold text-white">
               Open event <ChevronRight className="size-4" />
             </Link>
           </div>
         </div>
       ) : null}
 
-      {/* Bottom sheet */}
+      {/* Bottom: event card, collapsible people rail, or a compact pill */}
       <div className="pointer-events-none absolute inset-x-0 bottom-[96px] md:bottom-4">
         <AnimatePresence mode="wait">
           {eventCard ? (
             <motion.div key={eventCard.id} initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }} className="pointer-events-auto mx-auto max-w-md px-3">
-              <div className="glass-strong relative overflow-hidden rounded-3xl p-4 text-white">
-                <button onClick={() => setSelectedEvent(null)} className="absolute top-3 right-3 rounded-full p-1 text-white/60 hover:text-white" aria-label="Close">
+              <div className="relative overflow-hidden rounded-3xl border border-line bg-white p-4 shadow-[0_20px_50px_-20px_rgba(76,29,149,0.45)]">
+                <button onClick={() => setSelectedEvent(null)} className="absolute top-3 right-3 rounded-full p-1 text-faint hover:bg-canvas hover:text-ink" aria-label="Close">
                   <X className="size-4" />
                 </button>
-                <div className="flex items-center gap-2 text-[11px] font-semibold tracking-wide text-violet-200 uppercase">
+                <div className="flex items-center gap-2 text-[11px] font-semibold tracking-wide text-brand-700 uppercase">
                   <CalendarDays className="size-3.5" /> {eventCard.kind.replace("-", " ")}
-                  {eventCard.live ? <span className="rounded-full bg-emerald-400/20 px-2 py-0.5 text-emerald-300 normal-case">Live</span> : null}
-                  {eventCard.isSample ? <span className="text-white/40 normal-case">sample</span> : null}
+                  {eventCard.live ? <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700 normal-case">Live</span> : null}
+                  {eventCard.isSample ? <span className="text-faint normal-case">sample</span> : null}
                 </div>
-                <p className="mt-1.5 pr-6 text-[18px] leading-tight font-semibold">{eventCard.title}</p>
-                <p className="mt-1 text-[12.5px] text-white/65">
+                <p className="mt-1.5 pr-6 text-[18px] leading-tight font-semibold text-ink">{eventCard.title}</p>
+                <p className="mt-1 text-[12.5px] text-muted">
                   {fmtDateTime(eventCard.start)} · {eventCard.venue.replace(" (sample)", "")}
                 </p>
-                <div className="mt-3 flex items-center gap-4 text-[12.5px]">
+                <div className="mt-3 flex items-center gap-4 text-[12.5px] text-muted">
                   <span>
-                    <b className="text-[16px]">{eventCard.attendees}</b> <span className="text-white/60">going</span>
+                    <b className="text-[16px] text-ink">{eventCard.attendees}</b> going
                   </span>
                   <span>
-                    <b className="text-[16px] text-violet-300">{eventCard.strongMatches}</b> <span className="text-white/60">strong matches</span>
+                    <b className="text-[16px] text-brand-700">{eventCard.strongMatches}</b> strong matches
                   </span>
                 </div>
-                <Link href={`/events/${eventCard.id}`} className="mt-3 flex h-10 items-center justify-center gap-1.5 rounded-xl bg-white text-[13.5px] font-semibold text-[#0b0b1e]">
+                <Link href={`/events/${eventCard.id}`} className="mt-3 flex h-10 items-center justify-center gap-1.5 rounded-xl bg-brand-600 text-[13.5px] font-semibold text-white hover:bg-brand-700">
                   {eventCard.joined ? "Open event" : "View & join"} <ChevronRight className="size-4" />
                 </Link>
               </div>
             </motion.div>
-          ) : people.length ? (
-            <motion.div key="rail" initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}>
+          ) : people.length && sheetOpen ? (
+            <motion.div key="rail" initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }} transition={{ type: "spring", stiffness: 380, damping: 34 }}>
+              <div className="pointer-events-auto mb-2 flex justify-center">
+                <button
+                  onClick={() => {
+                    play("tap");
+                    setSheetOpen(false);
+                  }}
+                  className="glass inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold text-ink-2"
+                >
+                  <ChevronDown className="size-4" /> Hide people
+                </button>
+              </div>
               <div ref={rail} className="scrollbar-none pointer-events-auto flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-1 sm:px-4">
                 {people.map((p) => (
                   <PersonCard
@@ -245,13 +268,30 @@ export default function NearbyPage() {
                 ))}
               </div>
             </motion.div>
+          ) : people.length ? (
+            <motion.div key="pill" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }} className="pointer-events-auto flex justify-center">
+              <button
+                onClick={() => {
+                  play("tap");
+                  setSheetOpen(true);
+                }}
+                className="inline-flex items-center gap-2.5 rounded-full bg-white py-1.5 pr-4 pl-1.5 text-[13.5px] font-semibold text-ink shadow-[0_12px_32px_-12px_rgba(76,29,149,0.5)] ring-1 ring-line"
+              >
+                <span className="flex -space-x-2">
+                  {people.slice(0, 3).map((p) => (
+                    <Avatar key={p.profile.id} name={p.profile.name} hue={p.profile.avatarHue} size={28} />
+                  ))}
+                </span>
+                {people.length} people nearby <ChevronUp className="size-4 text-brand-600" />
+              </button>
+            </motion.div>
           ) : null}
         </AnimatePresence>
         {data ? (
           <div className="pointer-events-auto mt-2 flex justify-center px-3">
-            <Link href="/preferences" className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] text-white/75">
-              {data.me.visible ? <ShieldCheck className="size-3.5 text-emerald-300" /> : <Ghost className="size-3.5 text-violet-300" />}
-              {data.me.visible ? `Approximate spots · shift every ${data.privacy.refreshMinutes} min · small groups anonymous` : data.me.reason}
+            <Link href="/preferences" className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] text-muted">
+              {data.me.visible ? <ShieldCheck className="size-3.5 text-emerald-600" /> : <Ghost className="size-3.5 text-brand-600" />}
+              {data.me.visible ? `Approximate spots · reshuffle every ${data.privacy.refreshMinutes} min` : data.me.reason}
             </Link>
           </div>
         ) : null}
@@ -280,54 +320,52 @@ function PersonCard({ p, active, onFocus, onConnect }: { p: MapPerson; active: b
       data-id={p.profile.id}
       onClick={onFocus}
       className={cx(
-        "glass-strong w-[290px] shrink-0 cursor-pointer snap-center rounded-3xl p-3.5 text-white transition-all sm:w-[320px]",
-        active && "ring-2 ring-violet-300/80",
+        "w-[290px] shrink-0 cursor-pointer snap-center rounded-3xl border bg-white p-3.5 shadow-[0_16px_40px_-20px_rgba(76,29,149,0.45)] transition-all sm:w-[320px]",
+        active ? "border-brand-400 ring-2 ring-brand-200" : "border-line",
       )}
     >
       <div className="flex items-center gap-3">
         <Avatar name={p.profile.name} hue={p.profile.avatarHue} size={48} live={p.live} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
-            <p className="truncate text-[15px] font-semibold">{p.profile.name}</p>
-            {p.profile.isDemo ? <DemoTag className="border-white/25 text-white/50" /> : null}
+            <p className="truncate text-[15px] font-semibold text-ink">{p.profile.name}</p>
+            {p.profile.isDemo ? <DemoTag /> : null}
           </div>
-          <p className="truncate text-[12px] text-white/60">{p.profile.headline}</p>
+          <p className="truncate text-[12px] text-muted">{p.profile.headline}</p>
         </div>
-        <div className="rounded-full bg-white p-0.5">
-          <ScoreRing score={p.score} size={42} />
-        </div>
+        <ScoreRing score={p.score} size={42} />
       </div>
       <div className="mt-2.5 flex flex-wrap gap-1.5 text-[11px]">
-        {p.liveLabel ? <span className="rounded-full bg-emerald-400/15 px-2 py-0.5 font-medium text-emerald-300">{p.liveLabel}</span> : null}
+        {p.liveLabel ? <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700">{p.liveLabel}</span> : null}
         {p.hereNow ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-sky-400/15 px-2 py-0.5 font-medium text-sky-300">
+          <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 font-medium text-sky-700">
             <MapPinCheck className="size-3" /> Here now
           </span>
         ) : null}
-        {p.zoneName ? <span className="rounded-full bg-white/10 px-2 py-0.5 text-white/70">near {p.zoneName}</span> : null}
+        {p.zoneName ? <span className="rounded-full bg-canvas px-2 py-0.5 text-muted">near {p.zoneName}</span> : null}
       </div>
       {p.reasons[0] ? (
-        <p className="mt-2 line-clamp-2 flex gap-1.5 text-[12.5px] text-white/80">
-          <Sparkles className="mt-0.5 size-3.5 shrink-0 text-violet-300" /> {p.reasons[0]}
+        <p className="mt-2 line-clamp-2 flex gap-1.5 text-[12.5px] text-ink-2">
+          <Sparkles className="mt-0.5 size-3.5 shrink-0 text-brand-500" /> {p.reasons[0]}
         </p>
       ) : null}
       <div className="mt-3 flex gap-2">
-        <Link href={`/people/${p.profile.id}`} onClick={(e) => e.stopPropagation()} className="flex h-9 flex-1 items-center justify-center rounded-xl bg-white/10 text-[13px] font-medium hover:bg-white/15">
+        <Link href={`/people/${p.profile.id}`} onClick={(e) => e.stopPropagation()} className="flex h-9 flex-1 items-center justify-center rounded-xl bg-canvas text-[13px] font-medium text-ink-2 hover:bg-brand-50">
           Profile
         </Link>
         {p.requestState === "connected" ? (
-          <span className="flex h-9 flex-1 items-center justify-center gap-1 rounded-xl bg-emerald-400/15 text-[13px] font-medium text-emerald-300">
+          <span className="flex h-9 flex-1 items-center justify-center gap-1 rounded-xl bg-emerald-50 text-[13px] font-medium text-emerald-700">
             <Check className="size-4" /> Connected
           </span>
         ) : p.requestState === "pending-out" ? (
-          <span className="flex h-9 flex-1 items-center justify-center rounded-xl bg-white/10 text-[13px] text-white/70">Sent</span>
+          <span className="flex h-9 flex-1 items-center justify-center rounded-xl bg-canvas text-[13px] text-muted">Sent</span>
         ) : (
           <button
             onClick={(e) => {
               e.stopPropagation();
               onConnect();
             }}
-            className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-white text-[13px] font-semibold text-[#0b0b1e]"
+            className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-brand-600 text-[13px] font-semibold text-white hover:bg-brand-700"
           >
             <Send className="size-3.5" /> Connect
           </button>

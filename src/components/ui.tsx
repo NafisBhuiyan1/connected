@@ -3,6 +3,7 @@
 import { createAvatar } from "@dicebear/core";
 import { notionists } from "@dicebear/collection";
 import { clsx } from "clsx";
+import { portraitFor } from "@/lib/portraits";
 import { AnimatePresence, motion } from "motion/react";
 import { Loader2, X } from "lucide-react";
 import Link from "next/link";
@@ -27,6 +28,8 @@ function hueToHex(h: number, s = 0.75, l = 0.86): string {
 }
 
 export function faceUri(seed: string, hue = 240): string {
+  const photo = portraitFor(seed);
+  if (photo) return photo;
   const key = `${seed}|${hue}`;
   let uri = faceCache.get(key);
   if (!uri) {
@@ -42,8 +45,7 @@ type Variant = "primary" | "secondary" | "ghost" | "danger" | "soft";
 type Size = "sm" | "md" | "lg";
 
 const variantCls: Record<Variant, string> = {
-  primary:
-    "brand-gradient text-white shadow-[0_6px_16px_-6px_rgba(81,69,224,0.55)] hover:brightness-110 active:brightness-95 disabled:opacity-60",
+  primary: "bg-brand-600 text-white shadow-[0_1px_2px_rgba(76,29,149,0.25)] hover:bg-brand-700 active:bg-brand-800 disabled:opacity-60",
   secondary: "bg-surface text-ink border border-line hover:border-line-2 hover:bg-canvas disabled:opacity-60",
   ghost: "text-ink-2 hover:bg-canvas hover:text-ink disabled:opacity-50",
   danger: "bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-60",
@@ -245,7 +247,7 @@ export function Avatar({
         </span>
       ) : (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={faceUri(name, hue)} alt="" width={size} height={size} className="size-full rounded-full ring-2 ring-white" draggable={false} />
+        <img src={faceUri(name, hue)} alt="" width={size} height={size} className="size-full rounded-full object-cover ring-2 ring-white" draggable={false} />
       )}
       {live ? (
         <span className="absolute right-0 bottom-0 flex size-3">

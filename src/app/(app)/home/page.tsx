@@ -18,7 +18,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { LoadingCards, MatchCard, PeopleStack, type MatchWithState } from "@/components/people";
-import { Badge, ButtonLink, Card, cx, ErrorBox, Progress, SectionTitle } from "@/components/ui";
+import { Badge, ButtonLink, Card, cx, ErrorBox, faceUri, Progress, SectionTitle } from "@/components/ui";
 import { firstName, fmtDateTime, useApi } from "@/lib/client";
 import type { EventRecommendation } from "@/lib/engine/events";
 import type { Mission, Profile, PublicProfile } from "@/lib/types";
@@ -80,12 +80,11 @@ export default function HomePage() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="relative overflow-hidden rounded-[28px] bg-ink px-5 pt-6 pb-5 text-white sm:px-8 sm:pt-8 sm:pb-7"
+        className="relative overflow-hidden rounded-[28px] bg-brand-700 px-5 pt-6 pb-5 text-white sm:px-8 sm:pt-8 sm:pb-7"
       >
-        <div className="pointer-events-none absolute -top-24 -right-16 size-72 rounded-full bg-brand-500/40 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-28 -left-10 size-72 rounded-full bg-violet-500/30 blur-3xl" />
+        <div className="pointer-events-none absolute -top-24 -right-16 size-72 rounded-full bg-brand-400/30 blur-3xl" />
         <div
-          className="pointer-events-none absolute inset-0 opacity-[0.07]"
+          className="pointer-events-none absolute inset-0 opacity-[0.08]"
           style={{ backgroundImage: "radial-gradient(white 1px, transparent 1px)", backgroundSize: "18px 18px" }}
         />
         <div className="relative">
@@ -96,7 +95,7 @@ export default function HomePage() {
           <h1 className="mt-1.5 text-[30px] leading-[1.08] font-semibold tracking-[-0.02em] sm:text-[38px]">
             Who will you build
             <br className="sm:hidden" /> with{" "}
-            <span className="bg-gradient-to-r from-brand-300 via-violet-300 to-fuchsia-300 bg-clip-text text-transparent">today</span>?
+            <span className="text-brand-200">today</span>?
           </h1>
           <form
             onSubmit={submitIdea}
@@ -109,7 +108,7 @@ export default function HomePage() {
               placeholder="Your idea → your team"
               className="h-10 min-w-0 flex-1 bg-transparent text-[15px] text-white outline-none placeholder:text-white/45"
             />
-            <button className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-white px-4 text-[13.5px] font-semibold text-[#0b0b1e] transition-transform active:scale-95">
+            <button className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-white px-4 text-[13.5px] font-semibold text-brand-700 transition-transform active:scale-95">
               Build <ArrowRight className="size-3.5" />
             </button>
           </form>
@@ -127,10 +126,10 @@ export default function HomePage() {
                 {livePeople.slice(0, 3).map((p) => (
                   <span
                     key={p.id}
-                    className="inline-flex size-7 items-center justify-center rounded-full text-[10px] font-semibold ring-2 ring-ink"
-                    style={{ background: `linear-gradient(135deg, hsl(${p.avatarHue} 70% 58%), hsl(${(p.avatarHue + 40) % 360} 72% 48%))` }}
+                    className="inline-flex size-7 overflow-hidden rounded-full ring-2 ring-brand-700"
                   >
-                    {p.name.replace(/^Dr\.\s+/, "").split(" ").map((s) => s[0]).slice(0, 2).join("")}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={faceUri(p.name, p.avatarHue)} alt="" className="size-full object-cover" />
                   </span>
                 ))}
               </div>

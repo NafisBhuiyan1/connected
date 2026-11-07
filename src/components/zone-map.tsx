@@ -17,12 +17,12 @@ export interface MapPerson {
 }
 
 const KIND_STYLE: Record<EventZone["kind"], { fill: string; stroke: string; text: string }> = {
-  hall: { fill: "rgba(99,96,240,0.22)", stroke: "#8b85ff", text: "#c7cbff" },
-  lounge: { fill: "rgba(168,85,247,0.24)", stroke: "#c084fc", text: "#e9d5ff" },
-  booth: { fill: "rgba(16,185,129,0.2)", stroke: "#34d399", text: "#a7f3d0" },
-  table: { fill: "rgba(14,165,233,0.2)", stroke: "#38bdf8", text: "#bae6fd" },
-  food: { fill: "rgba(245,158,11,0.18)", stroke: "#fbbf24", text: "#fde68a" },
-  stage: { fill: "rgba(236,72,153,0.2)", stroke: "#f472b6", text: "#fbcfe8" },
+  hall: { fill: "#ede9fe", stroke: "#8b5cf6", text: "#5b21b6" },
+  lounge: { fill: "#fae8ff", stroke: "#d946ef", text: "#86198f" },
+  booth: { fill: "#d1fae5", stroke: "#10b981", text: "#065f46" },
+  table: { fill: "#e0f2fe", stroke: "#0ea5e9", text: "#075985" },
+  food: { fill: "#fef3c7", stroke: "#f59e0b", text: "#92400e" },
+  stage: { fill: "#fce7f3", stroke: "#ec4899", text: "#9d174d" },
 };
 
 function hash(s: string, seed: number): number {
@@ -87,10 +87,10 @@ export function ZoneMap({
       <svg viewBox="0 0 100 60" className="block h-auto w-full select-none" role="img" aria-label="Event zone map">
         <defs>
           <pattern id="zm-grid" width="4" height="4" patternUnits="userSpaceOnUse">
-            <path d="M 4 0 L 0 0 0 4" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="0.15" />
+            <path d="M 4 0 L 0 0 0 4" fill="none" stroke="#ede9fe" strokeWidth="0.15" />
           </pattern>
         </defs>
-        <rect x="0" y="0" width="100" height="60" rx="2.5" fill="#0a0a1f" />
+        <rect x="0" y="0" width="100" height="60" rx="2.5" fill="#fcfbff" />
         <rect x="0" y="0" width="100" height="60" rx="2.5" fill="url(#zm-grid)" />
         {zones.map((z) => {
           const st = KIND_STYLE[z.kind];
@@ -128,7 +128,7 @@ export function ZoneMap({
               ) : null}
               {count ? (
                 <g style={{ pointerEvents: "none" }}>
-                  <rect x={z.x + z.w - 6.2} y={z.y + 1.2} width="5" height="3" rx="1.5" fill="#0b0b1e" stroke={st.stroke} strokeWidth="0.25" />
+                  <rect x={z.x + z.w - 6.2} y={z.y + 1.2} width="5" height="3" rx="1.5" fill="#ffffff" stroke={st.stroke} strokeWidth="0.25" />
                   <text x={z.x + z.w - 3.7} y={z.y + 3.25} fontSize="1.9" fontWeight="700" textAnchor="middle" fill={st.text}>
                     {count}
                   </text>
@@ -162,10 +162,9 @@ export function ZoneMap({
                 cx={p.x}
                 cy={p.y}
                 r={r + (hl ? 0.6 : 0) + 0.35}
-                fill={p.isMe ? "#22d3ee" : strong ? "#9b6bff" : "rgba(255,255,255,0.55)"}
-                stroke={hl ? "#f59e0b" : "none"}
-                strokeWidth={hl ? 0.55 : 0}
-                style={strong ? { filter: "drop-shadow(0 0 0.8px #9b6bff)" } : undefined}
+                fill={p.isMe ? "#06b6d4" : strong ? "#7c3aed" : "#ffffff"}
+                stroke={hl ? "#f59e0b" : strong ? "none" : "#ddd6fe"}
+                strokeWidth={hl ? 0.55 : 0.2}
               />
               <clipPath id={`zf-${p.id}`}>
                 <circle cx={p.x} cy={p.y} r={r + (hl ? 0.6 : 0)} />
@@ -177,6 +176,7 @@ export function ZoneMap({
                 width={(r + (hl ? 0.6 : 0)) * 2}
                 height={(r + (hl ? 0.6 : 0)) * 2}
                 clipPath={`url(#zf-${p.id})`}
+                preserveAspectRatio="xMidYMid slice"
                 style={{ pointerEvents: "none" }}
               />
               {p.isMe ? (

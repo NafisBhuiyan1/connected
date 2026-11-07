@@ -83,11 +83,11 @@ function ShellInner({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className={cx("app-night on-dark min-h-dvh", actingAsDemo && "pt-10")}>
+    <div className={cx("min-h-dvh bg-canvas", actingAsDemo && "pt-10")}>
       {actingAsDemo ? <DemoBanner name={me.name} /> : null}
 
       {/* Top navigation — LinkedIn-style layout, Connected colors */}
-      <header className={cx("sticky top-0 z-30 border-b border-white/10 bg-[#07071a]/75 backdrop-blur-xl", actingAsDemo && "top-10")}>
+      <header className={cx("sticky top-0 z-30 border-b border-line bg-white/90 backdrop-blur-xl", actingAsDemo && "top-10")}>
         <div className="mx-auto flex h-[60px] max-w-6xl items-center gap-3 px-4 sm:px-6">
           <Link href="/home" className="shrink-0" aria-label="Connected home">
             <Logo compact />
@@ -106,7 +106,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                     active ? "text-ink" : "text-muted hover:text-ink",
                   )}
                 >
-                  <span className={cx("relative flex size-7 items-center justify-center rounded-lg", n.accent && "brand-gradient text-white shadow-[0_6px_14px_-6px_rgba(81,69,224,0.7)]")}>
+                  <span className={cx("relative flex size-7 items-center justify-center rounded-lg", n.accent && "bg-brand-600 text-white")}>
                     <Icon className={cx("size-[19px]", n.accent ? "text-white" : active ? "text-brand-600" : "")} />
                     {n.badge && pendingIn ? (
                       <span className="absolute -top-1 -right-1.5 flex min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-white">
@@ -115,7 +115,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                     ) : null}
                   </span>
                   {n.label}
-                  {active ? <motion.span layoutId="topnav" className="brand-gradient absolute inset-x-3 bottom-0 h-[2.5px] rounded-full shadow-[0_0_12px_rgba(155,107,255,0.9)]" /> : null}
+                  {active ? <motion.span layoutId="topnav" className="absolute inset-x-3 bottom-0 h-[2.5px] rounded-full bg-brand-600" /> : null}
                 </Link>
               );
             })}
@@ -135,7 +135,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
 
       {/* Mobile bottom nav — floating glass bar with a raised Build button */}
       <nav className="fixed inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] z-30 md:hidden">
-        <div className="relative grid grid-cols-5 items-end rounded-[22px] border border-white/12 bg-[#0d0c24]/80 px-1 py-1.5 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+        <div className="relative grid grid-cols-5 items-end rounded-[22px] border border-line bg-white/90 px-1 py-1.5 shadow-[0_12px_32px_-12px_rgba(76,29,149,0.28)] backdrop-blur-xl">
           {MOBILE_TABS.map((n) => {
             const active = isActive(pathname, n.href);
             const Icon = n.icon;
@@ -180,7 +180,7 @@ function SearchBox() {
         onChange={(e) => setQ(e.target.value)}
         placeholder="Search people, skills, goals"
         aria-label="Search"
-        className="h-9 w-full rounded-xl border border-white/10 bg-white/[0.06] pr-3 pl-9 text-[13.5px] text-ink outline-none placeholder:text-faint focus:border-violet-400/60 focus:ring-4 focus:ring-violet-500/20"
+        className="h-9 w-full rounded-xl border border-transparent bg-canvas pr-3 pl-9 text-[13.5px] text-ink outline-none placeholder:text-faint focus:border-brand-200 focus:bg-white focus:ring-4 focus:ring-brand-100"
       />
     </form>
   );
