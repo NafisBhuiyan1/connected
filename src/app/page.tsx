@@ -1,135 +1,120 @@
-import { ArrowDown, ArrowRight, EyeOff, MapPinned, ShieldCheck } from "lucide-react";
+import { ArrowRight, EyeOff, Ghost, MapPinned, ShieldCheck, Shuffle, Timer, Users, Wand2 } from "lucide-react";
 import Link from "next/link";
-import { Constellation, DarkLogo, FloatChip, HorizonGlow, Reveal, Starfield } from "@/components/constellation";
-import { HeroVisual } from "@/components/hero-visual";
+import { FaceStack, MatchMock, PhoneMock, TeamMock } from "@/components/landing-visuals";
+import { Reveal } from "@/components/reveal";
+import { Logo } from "@/components/shell";
 import { currentUserId } from "@/lib/server/session";
 
 export const dynamic = "force-dynamic";
-
-const boneBtn =
-  "inline-flex h-12 items-center justify-center gap-2 bg-bone px-7 text-[15px] font-medium text-night transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bone";
-const ghostBtn =
-  "inline-flex h-12 items-center justify-center gap-2 border border-bone/30 px-7 text-[15px] font-medium text-bone transition hover:border-bone/70 hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bone";
 
 export default async function Landing() {
   const signedIn = Boolean(await currentUserId());
   const primaryHref = signedIn ? "/home" : "/onboarding";
 
   return (
-    <div className="min-h-dvh bg-night font-sans text-bone selection:bg-violet-500/40">
-      {/* ---------- Hero ---------- */}
-      <section className="relative isolate flex min-h-[100svh] flex-col overflow-hidden">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(120%_80%_at_70%_10%,#191433_0%,#0b0a16_45%,#06060b_75%)]" />
-        <Starfield className="-z-10" />
-        <Constellation className="-z-10 opacity-90" />
-        <HorizonGlow className="-z-10" />
-
-        <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 pt-6 sm:px-10">
+    <div className="min-h-dvh bg-white text-ink">
+      {/* Header */}
+      <header className="sticky top-0 z-30 border-b border-line/70 bg-white/85 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
           <Link href="/" aria-label="Connected home">
-            <DarkLogo />
+            <Logo />
           </Link>
-          <nav className="flex items-center gap-5">
-            {signedIn ? (
-              <Link href="/home" className="bg-bone px-4 py-2 text-[14px] font-medium text-night hover:bg-white">
-                Open app
+          <nav className="flex items-center gap-2">
+            {signedIn ? null : (
+              <Link href="/login" className="rounded-xl px-3.5 py-2 text-[14px] font-medium text-ink-2 hover:bg-canvas">
+                Log in
               </Link>
-            ) : (
-              <>
-                <Link href="/login" className="text-[14px] text-bone/80 hover:text-bone">
-                  Log in
-                </Link>
-                <Link href="/onboarding" className="bg-bone px-4 py-2 text-[14px] font-medium text-night hover:bg-white">
-                  Join
-                </Link>
-              </>
             )}
+            <Link href={primaryHref} className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-brand-600 px-4 text-[14px] font-semibold text-white hover:bg-brand-700">
+              {signedIn ? "Open app" : "Get started"} <ArrowRight className="size-4" />
+            </Link>
           </nav>
-        </header>
+        </div>
+      </header>
 
-        <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col justify-end px-5 pb-28 sm:px-10 sm:pb-32">
-          <Reveal>
-            <p className="mb-6 text-[12px] tracking-[0.22em] text-bone/60 uppercase">CrownHacks 2026 · UNC Charlotte</p>
-          </Reveal>
-          <Reveal delay={0.08}>
-            <h1 className="font-serif text-[clamp(56px,11.5vw,156px)] leading-[0.9] tracking-[-0.02em] text-bone">
-              Find your people.
-              <br />
-              <span className="italic text-bone/90">Build what&apos;s next.</span>
-            </h1>
-          </Reveal>
-          <Reveal delay={0.18}>
-            <p className="mt-7 max-w-md text-[17px] leading-relaxed text-bone/70 sm:text-[19px]">AI that builds your team from the people in the room.</p>
-          </Reveal>
-          <Reveal delay={0.26}>
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Link href={primaryHref} className={boneBtn}>
-                {signedIn ? "Open Connected" : "Get started"} <ArrowRight className="size-4" />
-              </Link>
-              {!signedIn ? (
-                <Link href="/login" className={ghostBtn}>
-                  Log in
+      {/* Hero */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(70%_60%_at_80%_20%,#ede9fe_0%,transparent_60%),radial-gradient(50%_50%_at_10%_90%,#f5f3ff_0%,transparent_70%)]" />
+        <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 pt-12 pb-20 sm:px-8 lg:grid-cols-[1.15fr_1fr] lg:pt-20">
+          <div>
+            <Reveal>
+              <p className="inline-flex items-center gap-2 rounded-full border border-brand-100 bg-brand-50 px-3 py-1 text-[12.5px] font-semibold text-brand-700">
+                <span className="size-1.5 rounded-full bg-emerald-500" /> CrownHacks 2026 · UNC Charlotte
+              </p>
+            </Reveal>
+            <Reveal delay={0.05}>
+              <h1 className="mt-5 font-serif text-[54px] leading-[0.98] tracking-tight sm:text-[76px]">
+                Find your people.
+                <br />
+                <span className="italic text-brand-600">Build what&apos;s next.</span>
+              </h1>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <p className="mt-5 max-w-lg text-[18px] leading-relaxed text-ink-2">Tell Connected your idea. It finds the people around you who can build it — and gets you talking.</p>
+            </Reveal>
+            <Reveal delay={0.15}>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link href={primaryHref} className="inline-flex h-13 items-center justify-center gap-2 rounded-2xl bg-brand-600 px-7 text-[16px] font-semibold text-white shadow-[0_14px_30px_-12px_rgba(124,58,237,0.7)] transition-colors hover:bg-brand-700">
+                  <Wand2 className="size-4" /> {signedIn ? "Open Connected" : "Build my team"}
                 </Link>
-              ) : null}
-            </div>
-          </Reveal>
-        </div>
-
-        {/* floating glimpses of the product */}
-        <FloatChip className="top-[22%] right-[6%] hidden lg:block" delay={0.6}>
-          <span className="text-bone/50">Match</span> · Maya — Design · <b className="font-semibold text-bone">99%</b>
-        </FloatChip>
-        <FloatChip className="top-[38%] right-[18%] hidden lg:block" delay={1.1}>
-          ✓ Team formed · 4 people
-        </FloatChip>
-        <FloatChip className="top-[54%] right-[4%] hidden xl:block" delay={1.6}>
-          <span className="mr-1.5 inline-block size-1.5 rounded-full bg-emerald-400 align-middle" />
-          12 people open to chat
-        </FloatChip>
-
-        <a href="#how" aria-label="Scroll down" className="absolute bottom-7 left-1/2 -translate-x-1/2 text-bone/60 transition hover:text-bone">
-          <ArrowDown className="size-6 animate-bounce [animation-duration:2.4s]" strokeWidth={1.25} />
-        </a>
-      </section>
-
-      {/* ---------- 01 · Team Builder ---------- */}
-      <section id="how" className="relative border-t border-white/10">
-        <div className="mx-auto grid max-w-7xl items-center gap-14 px-5 py-24 sm:px-10 lg:grid-cols-2 lg:py-32">
-          <Reveal>
-            <p className="text-[12px] tracking-[0.22em] text-bone/50 uppercase">01 — Team Builder</p>
-            <h2 className="mt-5 font-serif text-[clamp(40px,6vw,76px)] leading-[0.95]">
-              Describe an idea.
-              <br />
-              <span className="italic text-bone/80">Get a team.</span>
-            </h2>
-            <p className="mt-6 max-w-md text-[17px] leading-relaxed text-bone/65">Connected finds the roles you need and the people here who fill them.</p>
-          </Reveal>
-          <Reveal delay={0.15}>
-            <HeroVisual />
+                {signedIn ? null : (
+                  <Link href="/login" className="inline-flex h-13 items-center justify-center rounded-2xl border border-line px-7 text-[16px] font-semibold text-ink hover:border-brand-200 hover:bg-brand-50">
+                    Try the demo
+                  </Link>
+                )}
+              </div>
+            </Reveal>
+            <Reveal delay={0.2}>
+              <div className="mt-8 flex items-center gap-3">
+                <FaceStack ids={["u_maya", "u_alex", "u_priya", "u_sam", "u_leila", "u_jordan"]} />
+                <p className="text-[13.5px] text-muted">
+                  <b className="text-ink">36 builders</b> in the CrownHacks space
+                </p>
+              </div>
+            </Reveal>
+          </div>
+          <Reveal delay={0.1} y={30}>
+            <PhoneMock />
           </Reveal>
         </div>
       </section>
 
-      {/* ---------- 02 · Explained ---------- */}
-      <section className="relative overflow-hidden border-t border-white/10">
-        <div className="pointer-events-none absolute -top-40 left-1/2 h-80 w-[70vw] -translate-x-1/2 rounded-full bg-brand-500/20 blur-3xl" />
-        <div className="relative mx-auto max-w-7xl px-5 py-24 sm:px-10 lg:py-32">
+      {/* Features */}
+      <section className="border-t border-line bg-canvas">
+        <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
           <Reveal>
-            <p className="text-[12px] tracking-[0.22em] text-bone/50 uppercase">02 — Explainable AI</p>
-            <h2 className="mt-5 max-w-3xl font-serif text-[clamp(40px,6vw,76px)] leading-[0.95]">
-              Every match, <span className="italic text-bone/80">explained.</span>
+            <h2 className="max-w-2xl font-serif text-[42px] leading-[1.05] tracking-tight">
+              From <span className="italic text-brand-600">&ldquo;I have an idea&rdquo;</span> to &ldquo;we&apos;re a team&rdquo;.
             </h2>
-            <p className="mt-6 max-w-lg text-[17px] leading-relaxed text-bone/65">No mystery scores — every pick comes with the reasons from real profiles.</p>
           </Reveal>
-          <div className="mt-14 grid gap-px overflow-hidden border border-white/10 bg-white/10 sm:grid-cols-3">
+          <div className="mt-12 grid gap-6 md:grid-cols-3">
             {[
-              { k: "4", v: "people per team, including you" },
-              { k: "54", v: "skills in the ontology" },
-              { k: "0", v: "GPS pins, ever" },
-            ].map((s, i) => (
-              <Reveal key={s.k} delay={0.1 * i} y={10}>
-                <div className="h-full bg-night p-8">
-                  <p className="font-serif text-[64px] leading-none text-bone">{s.k}</p>
-                  <p className="mt-3 text-[14px] text-bone/55">{s.v}</p>
+              { n: "01", t: "Describe it", b: "Your idea becomes the roles it needs.", mock: <TeamMock /> },
+              { n: "02", t: "See who fits", b: "Every match explained from real profiles.", mock: <MatchMock /> },
+              {
+                n: "03",
+                t: "Meet nearby",
+                b: "A live map of your event — faces, not GPS.",
+                mock: (
+                  <div className="flex h-full items-center justify-center rounded-3xl border border-line bg-white p-5 shadow-[0_20px_40px_-24px_rgba(76,29,149,0.45)]">
+                    <div className="grid grid-cols-3 gap-3">
+                      {["u_zoe", "u_kevin", "u_aisha", "u_ethan", "u_grace", "u_noah"].map((id, i) => (
+                        <div key={id} className={`relative rounded-full p-[3px] ${i % 2 ? "bg-brand-600" : "bg-brand-200"}`}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={`/avatars/${id}.jpg`} alt="" className="size-14 rounded-full object-cover" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ),
+              },
+            ].map((f, i) => (
+              <Reveal key={f.n} delay={i * 0.08}>
+                <div className="flex h-full flex-col">
+                  <div className="h-56">{f.mock}</div>
+                  <p className="mt-6 text-[12px] font-bold tracking-widest text-brand-500">{f.n}</p>
+                  <p className="mt-1 text-[22px] font-semibold tracking-tight">{f.t}</p>
+                  <p className="mt-1 text-[15px] text-muted">{f.b}</p>
                 </div>
               </Reveal>
             ))}
@@ -137,54 +122,63 @@ export default async function Landing() {
         </div>
       </section>
 
-      {/* ---------- 03 · Private ---------- */}
-      <section className="relative border-t border-white/10">
-        <div className="mx-auto grid max-w-7xl gap-12 px-5 py-24 sm:px-10 lg:grid-cols-[1.1fr_1fr] lg:py-32">
+      {/* Safety band */}
+      <section className="bg-brand-700 text-white">
+        <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8">
           <Reveal>
-            <p className="text-[12px] tracking-[0.22em] text-bone/50 uppercase">03 — Trust</p>
-            <h2 className="mt-5 font-serif text-[clamp(40px,6vw,76px)] leading-[0.95]">
-              Private <span className="italic text-bone/80">by design.</span>
-            </h2>
+            <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+              <h2 className="max-w-md font-serif text-[40px] leading-[1.05]">
+                Nearby, <span className="italic text-brand-200">never tracked.</span>
+              </h2>
+              <p className="max-w-sm text-[15px] text-white/75">Built-in anti-stalking protection, enforced on our servers and tested.</p>
+            </div>
           </Reveal>
-          <ul className="space-y-0 self-end border-t border-white/10">
+          <div className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-4">
             {[
-              { icon: ShieldCheck, t: "Opt in, per event" },
-              { icon: MapPinned, t: "Zones, never GPS pins" },
-              { icon: EyeOff, t: "You approve every message" },
-            ].map((b, i) => (
-              <Reveal key={b.t} delay={0.1 * i} y={10}>
-                <li className="flex items-center gap-4 border-b border-white/10 py-6">
-                  <b.icon className="size-5 shrink-0 text-violet-300" strokeWidth={1.5} />
-                  <span className="text-[20px] text-bone/90">{b.t}</span>
-                </li>
+              { icon: Shuffle, t: "±28 m", s: "Every pin offset, per viewer" },
+              { icon: Timer, t: "15 min", s: "Positions reshuffle" },
+              { icon: Users, t: "3+ people", s: "Or shown as a crowd" },
+              { icon: Ghost, t: "1 tap", s: "Ghost mode" },
+            ].map((x, i) => (
+              <Reveal key={x.s} delay={i * 0.06}>
+                <div className="rounded-3xl bg-white/10 p-5 ring-1 ring-white/15">
+                  <x.icon className="size-5 text-brand-200" />
+                  <p className="mt-3 text-[26px] font-semibold">{x.t}</p>
+                  <p className="text-[13px] text-white/70">{x.s}</p>
+                </div>
               </Reveal>
             ))}
-          </ul>
+          </div>
+          <div className="mt-6 flex flex-wrap gap-4 text-[13px] text-white/70">
+            <span className="inline-flex items-center gap-1.5">
+              <MapPinned className="size-4" /> No GPS ever shared
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <EyeOff className="size-4" /> Profile-view limits
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <ShieldCheck className="size-4" /> Block anyone instantly
+            </span>
+          </div>
         </div>
       </section>
 
-      {/* ---------- Closing CTA ---------- */}
-      <section className="relative isolate overflow-hidden border-t border-white/10">
-        <Starfield className="-z-10 opacity-60" />
-        <HorizonGlow className="-z-10 opacity-80" />
-        <div className="mx-auto flex max-w-7xl flex-col items-start gap-8 px-5 pt-28 pb-44 sm:px-10 lg:pt-36 lg:pb-56">
-          <Reveal>
-            <h2 className="font-serif text-[clamp(44px,8vw,112px)] leading-[0.92]">
-              Your team is <span className="italic">already here.</span>
-            </h2>
-          </Reveal>
-          <Reveal delay={0.12}>
-            <Link href={primaryHref} className={boneBtn}>
-              {signedIn ? "Open Connected" : "Get started"} <ArrowRight className="size-4" />
-            </Link>
-          </Reveal>
-        </div>
+      {/* CTA */}
+      <section className="mx-auto max-w-6xl px-5 py-20 text-center sm:px-8">
+        <Reveal>
+          <h2 className="font-serif text-[46px] leading-none tracking-tight">
+            Your team is <span className="italic text-brand-600">already here.</span>
+          </h2>
+          <Link href={primaryHref} className="mt-8 inline-flex h-13 items-center gap-2 rounded-2xl bg-brand-600 px-8 text-[16px] font-semibold text-white hover:bg-brand-700">
+            Get started <ArrowRight className="size-4" />
+          </Link>
+        </Reveal>
       </section>
 
-      <footer className="border-t border-white/10">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-5 py-6 text-[12px] text-bone/45 sm:flex-row sm:items-center sm:justify-between sm:px-10">
-          <span>© 2026 Connected · Built at CrownHacks</span>
-          <span>Demo profiles are fictional.</span>
+      <footer className="border-t border-line">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-5 py-6 text-[12.5px] text-muted sm:flex-row sm:px-8">
+          <span>Connected · built at CrownHacks 2026</span>
+          <span>Demo profiles are fictional · placeholder photos from randomuser.me</span>
         </div>
       </footer>
     </div>
