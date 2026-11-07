@@ -5,7 +5,8 @@ import { ArrowLeft, ArrowRight, Check, Eye, EyeOff, Loader2, Lock, MapPin, Spark
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { DarkLogo, HorizonGlow, Starfield } from "@/components/constellation";
+import { FaceStack } from "@/components/landing-visuals";
+import { Logo } from "@/components/shell";
 import { ChipSet, ListEditor, SkillPicker } from "@/components/pickers";
 import { cx, Field, Input, Select, Textarea, Toggle } from "@/components/ui";
 import { api, ClientError } from "@/lib/client";
@@ -68,9 +69,9 @@ const BLANK: Form = {
   allowRequests: true,
 };
 
-const glass = "rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_40px_120px_-50px_rgba(99,96,240,0.6)] backdrop-blur-xl sm:p-8";
+const glass = "rounded-3xl border border-line bg-white p-6 shadow-[0_30px_80px_-40px_rgba(76,29,149,0.35)] sm:p-8";
 const boneBtn =
-  "inline-flex h-11 items-center justify-center gap-2 bg-bone px-6 text-[14.5px] font-medium text-night transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bone";
+  "inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-brand-600 px-6 text-[15px] font-semibold text-white shadow-[0_12px_26px_-12px_rgba(124,58,237,0.7)] transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-500";
 
 export default function Onboarding() {
   const router = useRouter();
@@ -151,21 +152,19 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="on-dark relative isolate min-h-dvh overflow-hidden bg-night font-sans text-bone">
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(110%_70%_at_50%_0%,#191433_0%,#0b0a16_45%,#06060b_80%)]" />
-      <Starfield className="-z-10 opacity-70" />
-      <HorizonGlow className="-z-10 opacity-60" />
+    <div className="relative isolate min-h-dvh overflow-hidden bg-canvas font-sans text-ink">
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(80%_50%_at_50%_0%,#ede9fe_0%,transparent_70%)]" />
 
       <header className="mx-auto flex h-16 max-w-3xl items-center justify-between px-5 sm:px-6">
         <Link href="/" aria-label="Connected home">
-          <DarkLogo />
+          <Logo />
         </Link>
         {step >= 0 ? (
-          <span className="text-[12px] tracking-[0.18em] text-bone/50 uppercase">
+          <span className="rounded-full bg-white px-3 py-1 text-[12px] font-semibold text-brand-700 shadow-sm">
             {step + 1} / {STEPS.length}
           </span>
         ) : (
-          <Link href="/login" className="text-[14px] text-bone/70 hover:text-bone">
+          <Link href="/login" className="text-[14px] font-medium text-ink-2 hover:text-ink">
             Log in
           </Link>
         )}
@@ -176,8 +175,8 @@ export default function Onboarding() {
           <div className="mt-2 mb-8 flex gap-1.5">
             {STEPS.map((s, i) => (
               <div key={s} className="flex-1">
-                <div className={cx("h-[3px] rounded-full transition-colors duration-500", i <= step ? "bg-gradient-to-r from-brand-400 to-violet-300" : "bg-white/10")} />
-                <p className={cx("mt-2 hidden text-[11.5px] tracking-wide uppercase sm:block", i === step ? "text-bone" : "text-bone/35")}>{s}</p>
+                <div className={cx("h-1 rounded-full transition-colors duration-500", i <= step ? "bg-brand-600" : "bg-brand-100")} />
+                <p className={cx("mt-2 hidden text-[11.5px] font-medium tracking-wide uppercase sm:block", i === step ? "text-brand-700" : "text-faint")}>{s}</p>
               </div>
             ))}
           </div>
@@ -186,30 +185,33 @@ export default function Onboarding() {
         <AnimatePresence mode="wait">
           <motion.div key={step} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.3 }}>
             {step === -1 ? (
-              <div className="pt-10 text-center sm:pt-16">
-                <h1 className="font-serif text-[clamp(44px,8vw,80px)] leading-[0.95]">
-                  Let&apos;s find <span className="italic text-bone/85">your people.</span>
+              <div className="pt-8 text-center sm:pt-14">
+                <div className="flex justify-center">
+                  <FaceStack ids={["u_maya", "u_alex", "u_priya", "u_jordan", "u_leila", "u_sam", "u_zoe"]} size={44} />
+                </div>
+                <h1 className="mt-6 font-serif text-[clamp(44px,8vw,80px)] leading-[0.95] tracking-tight">
+                  Let&apos;s find <span className="italic text-brand-600">your people.</span>
                 </h1>
-                <p className="mx-auto mt-5 max-w-md text-[16px] text-bone/60">One minute. You control who sees you.</p>
+                <p className="mx-auto mt-5 max-w-md text-[16px] text-muted">One minute. You control who sees you.</p>
                 <div className="mx-auto mt-10 grid max-w-xl gap-3 sm:grid-cols-2">
-                  <button onClick={useSample} className="group rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-left backdrop-blur transition hover:border-violet-300/40 hover:bg-white/[0.07]">
-                    <span className="flex size-10 items-center justify-center rounded-2xl bg-violet-500/20 text-violet-200">
+                  <button onClick={useSample} className="group rounded-3xl bg-brand-600 p-6 text-left text-white shadow-[0_20px_40px_-20px_rgba(124,58,237,0.8)] transition hover:-translate-y-0.5 hover:bg-brand-700">
+                    <span className="flex size-10 items-center justify-center rounded-2xl bg-white/15">
                       <Sparkles className="size-5" />
                     </span>
-                    <p className="mt-4 font-medium text-bone">Quick start</p>
-                    <p className="mt-1 text-[13.5px] text-bone/55">Sample profile — add your name, edit anything.</p>
+                    <p className="mt-4 text-[16px] font-semibold">Quick start</p>
+                    <p className="mt-1 text-[13.5px] text-white/75">Sample profile — add your name, edit anything.</p>
                   </button>
-                  <button onClick={() => setStep(0)} className="group rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-left backdrop-blur transition hover:border-violet-300/40 hover:bg-white/[0.07]">
-                    <span className="flex size-10 items-center justify-center rounded-2xl bg-brand-500/20 text-brand-200">
+                  <button onClick={() => setStep(0)} className="group rounded-3xl border border-line bg-white p-6 text-left transition hover:-translate-y-0.5 hover:border-brand-200 hover:bg-brand-50/50">
+                    <span className="flex size-10 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
                       <UserRoundPlus className="size-5" />
                     </span>
-                    <p className="mt-4 font-medium text-bone">From scratch</p>
-                    <p className="mt-1 text-[13.5px] text-bone/55">Your skills, goals and what you can help with.</p>
+                    <p className="mt-4 text-[16px] font-semibold text-ink">From scratch</p>
+                    <p className="mt-1 text-[13.5px] text-muted">Your skills, goals and what you can help with.</p>
                   </button>
                 </div>
-                <p className="mt-10 text-[14px] text-bone/55">
+                <p className="mt-10 text-[14px] text-muted">
                   Already have an account?{" "}
-                  <Link href="/login" className="text-bone underline decoration-bone/30 underline-offset-4 hover:decoration-bone">
+                  <Link href="/login" className="font-semibold text-brand-700 hover:underline">
                     Log in
                   </Link>
                 </p>
@@ -246,7 +248,7 @@ export default function Onboarding() {
                         type="button"
                         onClick={() => setShowPw((s) => !s)}
                         aria-label={showPw ? "Hide password" : "Show password"}
-                        className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-lg p-1.5 text-bone/50 hover:text-bone"
+                        className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-lg p-1.5 text-faint hover:text-ink"
                       >
                         {showPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                       </button>
@@ -254,7 +256,7 @@ export default function Onboarding() {
                   </Field>
                 </div>
                 {err?.dup ? (
-                  <p className="rounded-xl border border-amber-300/25 bg-amber-400/10 px-3.5 py-2.5 text-[13.5px] text-amber-100">
+                  <p className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-[13.5px] text-amber-800">
                     {err.msg}.{" "}
                     <Link href="/login" className="font-medium underline underline-offset-4">
                       Log in instead
@@ -292,7 +294,7 @@ export default function Onboarding() {
               <div className={cx(glass, "space-y-6")}>
                 <div>
                   <h2 className="font-serif text-[36px] leading-none">What you bring</h2>
-                  <p className="mt-2 text-[14px] text-bone/55">Be honest about levels — teams are built from these.</p>
+                  <p className="mt-2 text-[14px] text-muted">Be honest about levels — teams are built from these.</p>
                 </div>
                 <SkillPicker value={f.skills} onChange={(v) => set("skills", v)} />
                 <Field label="Interests" hint="Up to 6.">
@@ -309,7 +311,7 @@ export default function Onboarding() {
                 </Field>
                 <div className="-mt-3 flex flex-wrap gap-1.5">
                   {ASK_EXAMPLES.map((x) => (
-                    <button key={x} type="button" onClick={() => set("ask", x)} className="rounded-full border border-dashed border-white/20 px-2.5 py-1 text-[12px] text-bone/55 hover:border-violet-300/50 hover:text-bone">
+                    <button key={x} type="button" onClick={() => set("ask", x)} className="rounded-full border border-dashed border-brand-200 px-2.5 py-1 text-[12px] text-ink-2 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700">
                       {x}
                     </button>
                   ))}
@@ -329,11 +331,11 @@ export default function Onboarding() {
             {step === 3 ? (
               <div className={cx(glass, "space-y-6")}>
                 <h2 className="font-serif text-[36px] leading-none">Privacy</h2>
-                <div className="rounded-2xl border border-violet-300/20 bg-violet-500/10 p-4">
+                <div className="rounded-2xl border border-brand-100 bg-brand-50/60 p-4">
                   <Toggle checked={f.joinEvent} onChange={(v) => set("joinEvent", v)} label="Join CrownHacks 2026" sub="Only people who also opt in can see you." />
                   {f.joinEvent ? (
                     <div className="mt-4">
-                      <p className="mb-2 text-[13px] text-bone/70">Where are you? (zone, never GPS)</p>
+                      <p className="mb-2 text-[13px] text-ink-2">Where are you? (zone, never GPS)</p>
                       <div className="flex flex-wrap gap-1.5">
                         {CROWNHACKS_ZONE_OPTIONS.map((z) => (
                           <button
@@ -342,7 +344,7 @@ export default function Onboarding() {
                             onClick={() => set("zone", z.id)}
                             className={cx(
                               "inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-[13px] transition",
-                              f.zone === z.id ? "border-bone bg-bone text-night" : "border-white/15 text-bone/75 hover:border-white/35",
+                              f.zone === z.id ? "border-brand-600 bg-brand-600 text-white" : "border-line bg-white text-ink-2 hover:border-brand-300",
                             )}
                           >
                             <MapPin className="size-3" /> {z.name}
@@ -366,19 +368,19 @@ export default function Onboarding() {
                       onClick={() => set("visibility", o.id)}
                       className={cx(
                         "rounded-2xl border p-3.5 text-left transition",
-                        f.visibility === o.id ? "border-violet-300/60 bg-violet-500/15" : "border-white/10 bg-white/[0.03] hover:border-white/25",
+                        f.visibility === o.id ? "border-brand-400 bg-brand-50 ring-2 ring-brand-100" : "border-line bg-white hover:border-brand-200",
                       )}
                     >
-                      <p className="flex items-center gap-1.5 text-[14px] font-medium text-bone">
+                      <p className="flex items-center gap-1.5 text-[14px] font-semibold text-ink">
                         {o.id === "hidden" ? <Lock className="size-3.5" /> : null}
                         {o.t}
                       </p>
-                      <p className="mt-0.5 text-[12px] text-bone/50">{o.b}</p>
+                      <p className="mt-0.5 text-[12px] text-muted">{o.b}</p>
                     </button>
                   ))}
                 </div>
                 <Toggle checked={f.allowRequests} onChange={(v) => set("allowRequests", v)} label="Accept requests" sub="Every request needs a specific ask." />
-                {err && !err.dup ? <p className="rounded-xl border border-rose-400/25 bg-rose-500/10 px-3.5 py-2.5 text-[13.5px] text-rose-200">{err.msg}</p> : null}
+                {err && !err.dup ? <p className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-[13.5px] text-rose-700">{err.msg}</p> : null}
               </div>
             ) : null}
           </motion.div>
@@ -388,7 +390,7 @@ export default function Onboarding() {
           <div className="mt-6 flex items-center justify-between">
             <button
               onClick={() => setStep((s) => s - 1)}
-              className="inline-flex h-11 items-center gap-2 px-2 text-[14px] text-bone/65 transition hover:text-bone focus-visible:outline-2 focus-visible:outline-bone/60"
+              className="inline-flex h-11 items-center gap-2 rounded-xl px-3 text-[14px] font-medium text-ink-2 transition hover:bg-white hover:text-ink focus-visible:outline-2 focus-visible:outline-brand-400"
             >
               <ArrowLeft className="size-4" /> Back
             </button>

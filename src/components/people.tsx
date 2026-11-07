@@ -413,27 +413,23 @@ export function QuietInterestButton({ personId, name, sent: initial, onMutual }:
   );
 }
 
-/** LinkedIn-style cover banner in Connected colors: indigo → violet → night, with a faint constellation. */
+/** Cover banner in Connected purple with soft "map contour" rings — each person's hue tints the glow. */
 export function ProfileCover({ hue = 250, className }: { hue?: number; className?: string }) {
-  const pts = [
-    [8, 30], [18, 62], [27, 22], [38, 48], [47, 18], [58, 58], [66, 30], [76, 52], [85, 20], [93, 44],
-  ] as const;
+  const cx0 = 70 + (hue % 25);
   return (
     <div
       className={cx("relative h-28 overflow-hidden sm:h-36", className)}
       style={{
-        background: `radial-gradient(120% 140% at 85% 0%, hsl(${hue} 80% 62% / 0.55), transparent 55%), linear-gradient(120deg, #3b2fb8 0%, #6a4ff0 42%, #2a1f6e 72%, #0b0a1a 100%)`,
+        background: `radial-gradient(90% 120% at ${cx0}% 10%, hsl(${hue} 85% 72% / 0.55), transparent 60%), linear-gradient(135deg, #6d28d9 0%, #7c3aed 40%, #a78bfa 100%)`,
       }}
     >
-      <svg className="absolute inset-0 size-full opacity-60" viewBox="0 0 100 80" preserveAspectRatio="none" aria-hidden>
-        {pts.slice(0, -1).map(([x, y], i) => (
-          <line key={i} x1={x} y1={y} x2={pts[i + 1][0]} y2={pts[i + 1][1]} stroke="white" strokeOpacity="0.18" strokeWidth="0.25" />
+      <svg className="absolute inset-0 size-full" viewBox="0 0 400 140" preserveAspectRatio="xMidYMid slice" aria-hidden>
+        {[30, 60, 90, 120, 150, 180, 210].map((r, i) => (
+          <circle key={r} cx={cx0 * 4} cy={30} r={r} fill="none" stroke="white" strokeOpacity={0.22 - i * 0.025} strokeWidth="1" />
         ))}
-        {pts.map(([x, y], i) => (
-          <circle key={i} cx={x} cy={y} r={i % 3 === 0 ? 0.9 : 0.55} fill="white" fillOpacity={i % 3 === 0 ? 0.85 : 0.5} />
-        ))}
+        <circle cx={cx0 * 4} cy={30} r="5" fill="white" fillOpacity="0.9" />
       </svg>
-      <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.35) 0.6px, transparent 0.6px)", backgroundSize: "14px 14px", opacity: 0.25 }} />
+      <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/10 to-transparent" />
     </div>
   );
 }
