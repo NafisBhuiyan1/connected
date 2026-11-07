@@ -5,6 +5,7 @@ import { Camera, Flag, Heart, ImagePlus, Loader2, MessageCircle, Send, Trash2, X
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { api, timeAgo, useApi } from "@/lib/client";
+import { useLive, useLiveStatus } from "@/lib/live";
 import { play } from "@/lib/sfx";
 import type { PublicProfile } from "@/lib/types";
 import { useToast } from "./toast";
@@ -20,7 +21,9 @@ interface LoungeData {
 
 export function EventLounge({ eventId, joined }: { eventId: string; joined: boolean }) {
   const [tab, setTab] = useState<"chat" | "photos">("chat");
-  const { data, error, reload, setData } = useApi<LoungeData>(joined ? `/api/events/${eventId}/lounge` : null, { poll: 3000 });
+  const { data, error, reload, setData } = useApi<LoungeData>(joined ? `/api/events/${eventId}/lounge` : null, { poll: 20_000 });
+  const live = useLiveStatus();
+  useLive([joined && `lounge:${eventId}`], () => void reload());
 
   if (!joined) {
     return (
@@ -53,8 +56,15 @@ export function EventLounge({ eventId, joined }: { eventId: string; joined: bool
           ))}
         </div>
         {data ? (
-          <span className="ml-auto inline-flex items-center gap-1.5 text-[12px] text-muted">
-            <span className="size-2 rounded-full bg-emerald-500" /> {data.online} checked in
+          <span className="ml-auto inline-flex items-center gap-3 text-[12px] text-muted">
+            <span className="hidden sm:inline">{data.online} checked in</span>
+            <span className={cx("inline-flex items-center gap-1.5 font-semibold", live ? "text-emerald-700" : "text-faint")} title={live ? "New messages appear instantly" : "Reconnecting…"}>
+              <span className="relative flex size-2">
+                {live ? <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-70" /> : null}
+                <span className={cx("relative inline-flex size-2 rounded-full", live ? "bg-emerald-500" : "bg-faint")} />
+              </span>
+              {live ? "Live" : "Connecting"}
+            </span>
           </span>
         ) : null}
       </div>

@@ -9,6 +9,7 @@ import { useSession } from "@/components/session";
 import { useToast } from "@/components/toast";
 import { Avatar, Badge, Button, Card, cx, DemoTag, Empty, ErrorBox, Skeleton } from "@/components/ui";
 import { api, firstName, timeAgo, useApi } from "@/lib/client";
+import { useLive } from "@/lib/live";
 import { play } from "@/lib/sfx";
 import { ROLE_BY_ID } from "@/lib/ontology";
 import type { Message, PublicProfile, Team } from "@/lib/types";
@@ -32,7 +33,8 @@ export default function TeamRoom() {
   const { id } = useParams<{ id: string }>();
   const { me } = useSession();
   const toast = useToast();
-  const { data, error, loading, reload } = useApi<TeamData>(`/api/teams/${id}`, { poll: 3000 });
+  const { data, error, loading, reload } = useApi<TeamData>(`/api/teams/${id}`, { poll: 20_000 });
+  useLive([`thread:${id}`], () => void reload());
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [celebrate, setCelebrate] = useState(false);

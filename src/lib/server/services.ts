@@ -23,6 +23,7 @@ import { tagText } from "../ontology";
 import { CROWNHACKS_ID, DEFAULT_PREFS, PRIVACY } from "../constants";
 import type { ConnectedEvent, Prefs } from "../types";
 import { draftIntro, understandGoal, type AiSource } from "./ai";
+import { publish } from "./bus";
 import { getDb, mutate, newId } from "./store";
 
 export class ApiError extends Error {
@@ -86,6 +87,7 @@ function pub(db: Database, viewer: Profile, p: Profile): PublicProfile {
 
 function notify(db: Database, n: Omit<Notification, "id" | "read" | "createdAt">) {
   db.notifications.push({ ...n, id: newId("n"), read: false, createdAt: nowIso() });
+  publish(`user:${n.userId}`);
 }
 
 function profileOrThrow(db: Database, id: string): Profile {
@@ -504,6 +506,7 @@ export function respondTeam(me: Profile, id: string, accept: boolean) {
     if (!m || m.status !== "invited") throw new ApiError(409, "No pending invite for you on this team.");
     m.status = accept ? "accepted" : "declined";
     m.respondedAt = nowIso();
+    publish(`thread:${t.id}`);
     if (!accept) {
       for (const slot of t.roles) {
         if (slot.assignedUserId !== me.id) continue;
@@ -557,6 +560,7 @@ export function postMessage(me: Profile, threadId: string, body: string) {
     } else throw new ApiError(404, "Thread not found");
     const msg = { id: newId("m"), threadId, fromId: me.id, body: text.slice(0, 2000), createdAt: nowIso() };
     db.messages.push(msg);
+    publish(`thread:${threadId}`);
     return msg;
   });
 }
@@ -576,6 +580,7 @@ export function toggleStep(me: Profile, teamId: string, stepId: string) {
     const s = t.nextSteps.find((x) => x.id === stepId);
     if (!s) throw new ApiError(404, "Step not found");
     s.done = !s.done;
+    publish(`thread:${t.id}`);
     return t;
   });
 }
@@ -1323,6 +1328,24 @@ export function liveMap(me: Profile, eventId?: string) {
 
 const REPORT_HIDE_THRESHOLD = 3;
 
+/** Realtime topics follow the same access rules as the data behind them. */
+export function canSubscribe(me: Profile, topic: string): boolean {
+  const i = topic.indexOf(":");
+  if (i < 1) return false;
+  const kind = topic.slice(0, i);
+  const id = topic.slice(i + 1);
+  const db = getDb();
+  if (kind === "user") return id === me.id;
+  if (kind === "lounge") return db.memberships.some((m) => m.userId === me.id && m.eventId === id);
+  if (kind === "thread") {
+    const t = db.teams.find((x) => x.id === id);
+    if (t) return t.ownerId === me.id || t.members.some((m) => m.userId === me.id);
+    const r = db.requests.find((x) => x.id === id);
+    return Boolean(r && (r.fromId === me.id || r.toId === me.id));
+  }
+  return false;
+}
+
 function requireMember(db: Database, me: Profile, eventId: string) {
   const ev = db.events.find((e) => e.id === eventId);
   if (!ev) throw new ApiError(404, "Event not found");
@@ -1373,6 +1396,7 @@ export function postLounge(me: Profile, eventId: string, body: string) {
     const msg = { id: newId("lg"), eventId, userId: me.id, body: text, createdAt: new Date(now).toISOString(), reports: [] as string[] };
     db.lounge.push(msg);
     if (db.lounge.length > 5000) db.lounge.splice(0, db.lounge.length - 5000);
+    publish(`lounge:${eventId}`);
     return msg;
   });
 }
@@ -1381,6 +1405,7 @@ export function reportLounge(me: Profile, messageId: string) {
   return mutate((db) => {
     const m = (db.lounge ?? []).find((x) => x.id === messageId);
     if (!m) throw new ApiError(404, "Message not found");
+    publish(`lounge:${m.eventId}`);
     if (m.userId === me.id) {
       db.lounge = db.lounge.filter((x) => x.id !== messageId); // reporting your own = delete
       return { deleted: true };
@@ -1416,6 +1441,7 @@ export async function uploadPhoto(me: Profile, eventId: string, file: File, capt
     d.photos ??= [];
     const photo = { id, eventId, userId: me.id, file: fileName, mime: file.type, caption: caption.trim().slice(0, 200), likes: [] as string[], reports: [] as string[], createdAt: new Date().toISOString() };
     d.photos.push(photo);
+    publish(`lounge:${eventId}`);
     return photo;
   });
 }
@@ -1432,6 +1458,7 @@ export function photoAction(me: Profile, photoId: string, action: "like" | "repo
   return mutate((db) => {
     const p = (db.photos ?? []).find((x) => x.id === photoId);
     if (!p) throw new ApiError(404, "Photo not found");
+    publish(`lounge:${p.eventId}`);
     if (action === "delete") {
       if (p.userId !== me.id) throw new ApiError(403, "You can only delete your own photos.");
       db.photos = db.photos.filter((x) => x.id !== photoId);

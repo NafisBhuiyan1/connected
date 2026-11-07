@@ -25,6 +25,7 @@ import { useSession } from "@/components/session";
 import { useToast } from "@/components/toast";
 import { Avatar, Badge, Button, ButtonLink, Card, cx, Empty, ErrorBox, Input, PageHeader, Skeleton } from "@/components/ui";
 import { api, firstName, timeAgo, useApi } from "@/lib/client";
+import { useLive } from "@/lib/live";
 import { roleLabel } from "@/lib/ontology";
 import type { ConnectionRequest, Message, OutcomeRating, PublicProfile, Team, TeamMemberStatus } from "@/lib/types";
 
@@ -47,8 +48,13 @@ type Tab = "requests" | "connections" | "teams";
 
 export default function ConnectionsPage() {
   const { me } = useSession();
-  const reqs = useApi<RequestsResponse>("/api/requests", { poll: 4000 });
-  const teams = useApi<{ teams: TeamRow[] }>("/api/teams", { poll: 4000 });
+  const reqs = useApi<RequestsResponse>("/api/requests", { poll: 20_000 });
+  const teams = useApi<{ teams: TeamRow[] }>("/api/teams", { poll: 20_000 });
+  // Requests, accepts and team invites all notify the recipient, so the user topic covers this page.
+  useLive([me && `user:${me.id}`], () => {
+    void reqs.reload();
+    void teams.reload();
+  });
   const [tab, setTab] = useState<Tab>("requests");
 
   const incoming = reqs.data?.incoming ?? [];
@@ -466,7 +472,8 @@ function ConnectionCard({ r, person, meId, onDone }: { r: Req; person?: PublicPr
 
 function Thread({ requestId, meId, person }: { requestId: string; meId: string; person?: PublicProfile }) {
   const toast = useToast();
-  const { data, loading, error, reload, setData } = useApi<{ messages: Message[] }>(`/api/requests/${requestId}`, { poll: 4000 });
+  const { data, loading, error, reload, setData } = useApi<{ messages: Message[] }>(`/api/requests/${requestId}`, { poll: 20_000 });
+  useLive([`thread:${requestId}`], () => void reload());
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
 

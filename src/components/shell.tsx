@@ -22,6 +22,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { api, timeAgo, useApi } from "@/lib/client";
+import { useLive } from "@/lib/live";
 import type { Notification } from "@/lib/types";
 import { SessionProvider, useSession } from "./session";
 import { Avatar, Badge, Button, cx } from "./ui";
@@ -58,7 +59,8 @@ function ShellInner({ children }: { children: React.ReactNode }) {
   const { me, loading, actingAsDemo } = useSession();
   const router = useRouter();
   const pathname = usePathname();
-  const notes = useApi<{ items: Notification[]; unread: number }>(me ? "/api/notifications" : null, { poll: 4000 });
+  const notes = useApi<{ items: Notification[]; unread: number }>(me ? "/api/notifications" : null, { poll: 30_000 });
+  useLive([me && `user:${me.id}`], () => void notes.reload());
   const pendingIn = notes.data?.items.filter((n) => !n.read && (n.kind === "request" || n.kind === "team-invite")).length ?? 0;
 
   useEffect(() => {
