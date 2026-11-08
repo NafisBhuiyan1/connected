@@ -4,6 +4,11 @@
 
 > LinkedIn tells you who people are. Connected tells you who to build with.
 
+**Live demo: https://connected-smoky.vercel.app**
+- Tap **Try the demo account**.
+- On a phone, use **Me → Install the app** to add it to your home screen.
+- Hosted free on Vercel with no database. Demo data resets whenever the server restarts, but the demo account and the real UNC Charlotte events reload automatically.
+
 ## Download and run (for teammates)
 
 1. **Get the code:**
