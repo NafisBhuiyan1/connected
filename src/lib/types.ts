@@ -395,7 +395,7 @@ export interface MatchResult {
 }
 
 /** Profile as other users are allowed to see it. */
-export type PublicProfile = Omit<Profile, "visibility" | "allowRequests" | "createdAt"> & {
+export type PublicProfile = Omit<Profile, "visibility" | "allowRequests" | "createdAt" | "prefs"> & {
   canRequest: boolean;
 };
 

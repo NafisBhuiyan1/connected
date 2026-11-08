@@ -17,7 +17,7 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
     shortcuts: [
-      { name: "Your assistant", url: "/build" },
+      { name: "Your assistant", url: "/coach" },
       { name: "Nearby people", url: "/map" },
       { name: "Events", url: "/events" },
     ],

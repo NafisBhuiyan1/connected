@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#28124f"/><stop offset="1" stop-color="#6d28d9"/></linearGradient><radialGradient id="glow"><stop stop-color="#bca0ff" stop-opacity=".35"/><stop offset="1" stop-color="#bca0ff" stop-opacity="0"/></radialGradient><pattern id="dots" width="32" height="32" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#c4b5fd" opacity=".15"/></pattern></defs>
+<rect width="1200" height="800" fill="url(#bg)"/><rect width="1200" height="800" fill="url(#dots)"/>
+<circle cx="940" cy="310" r="420" fill="url(#glow)"/>
+<g fill="none" stroke="#c4b5fd"><circle cx="940" cy="370" r="258" opacity=".13"/><circle cx="940" cy="370" r="184" opacity=".18"/><circle cx="940" cy="370" r="110" opacity=".25"/></g>
+<g transform="translate(76 70)"><rect width="66" height="66" rx="20" fill="#fff"/><g fill="none" stroke="#7c3aed" stroke-width="4.5"><circle cx="27" cy="33" r="11"/><circle cx="40" cy="33" r="11"/></g></g>
+<text x="162" y="116" font-family="Segoe UI,Arial,sans-serif" font-size="40" font-weight="650" fill="white" letter-spacing="-1.5">Connected</text>
+<text x="76" y="320" font-family="Segoe UI,Arial,sans-serif" font-size="91" font-weight="700" fill="white" letter-spacing="-4">Turn an idea</text>
+<text x="76" y="422" font-family="Segoe UI,Arial,sans-serif" font-size="91" font-weight="700" fill="white" letter-spacing="-4">into a team.</text>
+<text x="80" y="494" font-family="Segoe UI,Arial,sans-serif" font-size="28" fill="#ddd0fc">Find your people. Build what's next.</text>
+<g fill="none" stroke="white" stroke-width="16" transform="translate(780 245)"><circle cx="78" cy="125" r="62"/><circle cx="158" cy="125" r="62"/></g>
+<g fill="#c4b5fd"><circle cx="940" cy="112" r="6"/><circle cx="683" cy="370" r="6"/><circle cx="1120" cy="551" r="6"/><circle cx="945" cy="554" r="5"/></g>
+<path d="M80 626H1120" stroke="#c4b5fd" opacity=".25"/>
+<text x="80" y="686" font-family="Segoe UI,Arial,sans-serif" font-size="20" font-weight="600" fill="#e9dfff" letter-spacing="2">PEOPLE  ·  EVENTS  ·  TEAMS</text>
+<text x="80" y="732" font-family="Segoe UI,Arial,sans-serif" font-size="19" fill="#bda8e2">CrownHacks 2026</text>
+</svg>

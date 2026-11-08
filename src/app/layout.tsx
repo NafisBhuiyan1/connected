@@ -10,7 +10,9 @@ export const metadata: Metadata = {
   title: { default: "Connected — Find your people. Build what's next.", template: "%s · Connected" },
   description:
     "Connected is an AI collaboration engine for events: describe what you want to build and it assembles the complementary team to build it with — and gets you to a real conversation.",
-  icons: { icon: "/icon.svg" },
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "Connected", statusBarStyle: "default" },
+  icons: { icon: "/icon.svg", apple: "/icon-180.png" },
 };
 
 export const viewport: Viewport = {

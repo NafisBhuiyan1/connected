@@ -170,8 +170,15 @@ export function buildNeed(seeker: Profile, intent?: Intent | null, eventId?: str
 }
 
 export function toPublic(p: Profile, canRequest: boolean): PublicProfile {
-  const { visibility: _v, allowRequests: _a, createdAt: _c, ...rest } = p;
-  return { ...rest, canRequest };
+  // An allowlist keeps private preferences and future account fields out of every nested match.
+  return {
+    id: p.id, name: p.name, pronouns: p.pronouns, headline: p.headline, role: p.role,
+    university: p.university, major: p.major, gradYear: p.gradYear, bio: p.bio,
+    skills: p.skills, interests: p.interests, gives: p.gives, ask: p.ask,
+    lookingFor: p.lookingFor, openTo: p.openTo, introsOffered: p.introsOffered,
+    availability: p.availability, area: p.area, links: p.links,
+    isDemo: p.isDemo, avatarHue: p.avatarHue, canRequest,
+  };
 }
 
 const fmtTime = (iso: string) =>

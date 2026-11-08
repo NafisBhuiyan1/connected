@@ -29,6 +29,8 @@
    - Session cookies are `Secure` in production. Phones therefore need HTTPS (a tunnel or a host); plain `http://<LAN-IP>` only works with `npm run dev`.
    - Never commit `.env.local` or the `.data/` folder.
 
+The final Devpost story, demo script, requirements, and presenter recovery steps are in [the submission packet](docs/SUBMISSION-READY.md).
+
 ## Try it
 
 - **Demo login:** `demo@connected.app` / `crownhacks` (fictional "Riley Park"), or create your own account at `/onboarding`.
@@ -79,7 +81,7 @@ Safety is built into the backend (`liveMap()` in `services.ts`, covered by `test
 | **Quiet interest** | Double opt-in: the other person only finds out if they also want to meet you. |
 | **Missions** (`/missions`) | Goal → target roles → measurable progress: discovered → reached out → accepted → useful conversation or team formed. |
 | **Opportunity Radar** (Home) | Open roles that fit your skills, high-fit people who are free right now, events with strong matches, and warm intro paths (only through people who opted in to making intros). |
-| **Graph** (`/graph`) | Why each person is recommended: the roles they fill, shared interests, events and teams. |
+| **Personal coach** (`/coach`) | A conversation about your project, next steps, pitch, people, and events. Replies identify Claude or the rules fallback; grounded suggestions link into the app. |
 | **QR profile** (`/profile` → `/p/[id]`) | Show the QR code at the event. Scanning it opens your card, or sends a new user to signup and then back to your profile. |
 | **Demo control room** (`/demo`) | Act as a clearly labeled fictional persona (e.g., to accept the judge's invite live), reset demo data. Disable with `DEMO_MODE=off`. |
 
