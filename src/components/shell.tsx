@@ -375,13 +375,12 @@ function DemoBanner({ name }: { name: string }) {
 export function Logo({ small, onDark, compact }: { small?: boolean; onDark?: boolean; compact?: boolean }) {
   return (
     <span className="inline-flex items-center gap-2">
-      <span className={cx("brand-gradient relative inline-flex items-center justify-center rounded-[10px] shadow-[0_6px_16px_-6px_rgba(81,69,224,0.6)]", small ? "size-7" : "size-8")}>
-        <svg viewBox="0 0 32 32" className={small ? "size-5" : "size-6"} fill="none" stroke="white" strokeWidth="3">
-          <circle cx="12" cy="16" r="5.5" />
-          <circle cx="20" cy="16" r="5.5" opacity="0.85" />
-        </svg>
+      {/* The team's "C." app icon (shared with the Connected. mobile app). */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/brand/logo-128.png" alt="" width={32} height={32} className={cx("rounded-[10px] shadow-[0_6px_16px_-6px_rgba(91,53,201,0.6)]", small ? "size-7" : "size-8")} />
+      <span className={cx("font-semibold tracking-tight", onDark ? "text-bone" : "text-ink", small ? "text-[15px]" : "text-[17px]", compact && "hidden lg:inline")}>
+        Connected<span className="text-[#5B35C9]">.</span>
       </span>
-      <span className={cx("font-semibold tracking-tight", onDark ? "text-bone" : "text-ink", small ? "text-[15px]" : "text-[17px]", compact && "hidden lg:inline")}>Connected</span>
     </span>
   );
 }

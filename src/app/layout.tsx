@@ -12,11 +12,11 @@ export const metadata: Metadata = {
     "Connected is an AI collaboration engine for events: describe what you want to build and it assembles the complementary team to build it with — and gets you to a real conversation.",
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "Connected", statusBarStyle: "default" },
-  icons: { icon: "/icon.svg", apple: "/icon-180.png" },
+  icons: { icon: "/favicon.png", apple: "/icon-180.png" },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#5145e0",
+  themeColor: "#5B35C9",
   width: "device-width",
   initialScale: 1,
 };
