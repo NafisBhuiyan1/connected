@@ -6,6 +6,15 @@ updated: 2026-11-07
 
 Back to [[00 Start Here]]
 
+> **Superseded for the latest verified status:** see [[Connected — CURRENT CLAUDE BUILD]], kept current by whichever agent last worked. The counts below were Claude's state at ~6:20 PM and are kept for history.
+>
+> **Since then:**
+> - Codex commit `35d5e3c`: sessions, realtime hardening, subjects, landing. 65 tests at that commit.
+> - Claude `4ffb3e8`: Home carousel inset.
+> - Codex is working on an installable app + assistant batch at ~10:40 PM.
+>
+> **Demo script and Devpost draft for the current build:** [[02 Demo, Pitch & Video]].
+
 Repo: https://github.com/NafisBhuiyan1/connected (everything below is pushed to `main`).
 
 ## Working and verified (Saturday evening)

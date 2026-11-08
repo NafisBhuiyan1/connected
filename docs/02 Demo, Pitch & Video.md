@@ -4,49 +4,131 @@ updated: 2026-11-07
 ---
 # Demo, pitch and video
 
-Back to [[00 Start Here]] · Strategy: [[01 Product Strategy]]
+Back to [[00 Start Here]] · Strategy: [[01 Product Strategy]] · Latest build: [[Connected — CURRENT CLAUDE BUILD]]
 
-> CrownHacks judging: **Innovation, Technical, Impact, Presentation** (1–5 each). **Ties go to Technical, then Innovation.** Submission is a **≤2-minute video, the GitHub repo and a live expo demo**. Suggested track: **Most Technical** (the prize is an NVIDIA Jetson for each member).
+> **Rewritten by Claude, Nov 7 ~10:40 PM, for the current main app** (Claude's Next app + Codex's batch, repo `NafisBhuiyan1/connected`).
+>
+> **CrownHacks judging:**
+> - Scoring: **Innovation, Technical, Impact, Presentation**. Ties go to Technical, then Innovation.
+> - Submission: **≤2-minute video + GitHub repo + live expo demo**. Deadline is **Sun Nov 8, 11:00 AM ET**.
+> - Suggested track: **Most Technical**.
+>
+> **Claims rule:** say only what the build demonstrably does.
+> - Demo people are **fictional** (placeholder photos).
+> - "Imported" events are **real** UNC Charlotte listings.
+> - Scores are **estimates from profile data**, not predictions of team success.
+> - Don't use "half of attendees are first-timers", "competitors only do 1:1" or timed claims unless you've sourced or timed them yourself.
 
-## 30-second elevator pitch
-"Half of CrownHacks is first-timers, and a lot of people walk in without a team. Connected turns *I have an idea* into *here's my team* in about a minute. Tell it what you want to build. It works out the roles you need, searches the people here who opted in, and optimizes the best complementary team, with every pick explained from real profile data. Then it gets you to an actual conversation: a specific ask, an intro you approve, a place to meet. LinkedIn tells you who people are. Connected tells you who to build with."
+## 30-second pitch
+"You show up to a hackathon with an idea and no team. Connected starts with **what you want to build**. It works out the roles the idea needs, finds people at the event who opted in and cover those roles, and builds a complementary team. Every pick is explained from their profile. Then it gets you to a real conversation: a specific ask, an intro you approve, a place to meet. It also shows you nearby people and real campus events on a live map, without ever sharing anyone's GPS. LinkedIn tells you who people are. Connected tells you who to build with."
 
-## 60–90 second live demo (expo table)
-*Setup:* phone A (judge) at `/onboarding`. Laptop B is a teammate on `/demo`. Use the demo data (reset it in the morning).
-1. **(0:00)** "You just arrived at CrownHacks and don't know anyone." Judge taps **Quick start**, types their name, and taps through to **Create profile & build my team**.
-2. **(0:15)** The Team Builder auto-runs on *"I want to build an AI startup but need a developer and a designer."* Point at the four stages animating.
-3. **(0:25)** The result card shows **4 people · 6/6 roles · 99% coverage**. "It didn't hand you eight developers. It picked a backend + AI engineer, a designer and a frontend engineer, and you cover business."
-4. **(0:35)** Open **Under the hood**: *Exact search · 3,683 teams evaluated*. "When the space is small we check every possible team. When it's big we use a heuristic we benchmarked against brute force: optimal 95 times out of 96."
-5. **(0:45)** Tap **Swap** on one person to show alternatives, then tap **Invite 3 people**. The team room opens: *Forming, 1/4 joined.*
-6. **(0:55)** On laptop B, **act as Maya** (demo persona) → Connections → Teams → **Join**. On the judge's phone, the room updates: Maya joined, plus a system message. Once everyone accepts: **🎉 Team formed** and a meeting spot.
-7. **(1:15)** Optional: on the event page, tap **Check in**. "Your phone checks you're on campus; only *yes, I'm here* leaves the device." Show the zone map and **Organizer insights** (supply vs. demand).
-8. **(1:25)** Close: "From *I have an idea* to *we're a team*, in under 90 seconds."
+## Before filming / the expo (checklist)
+- [ ] `npm test` passes. Note the count it prints; don't reuse old counts.
+- [ ] **AI mode:** with `ANTHROPIC_API_KEY` set, the Team Builder badge says Claude interpreted the goal; without a key, the rules engine runs. **Say which one is on screen.** Never call the fallback "Claude".
+- [ ] **Reset demo data:** `/demo` → Reset. Imported events survive a reset.
+- [ ] **Real events:** open Events and check the green "Live from UNC Charlotte Events + NinerEngage" line. If it's missing, Events → Import → tap both feeds.
+- [ ] **Two screens for realtime:** phone = you (demo account `demo@connected.app` / `crownhacks`), laptop = teammate on `/demo` acting as a persona.
+- [ ] **Phones need HTTPS** for location (tunnel or deploy). Otherwise use the venue code `CROWN26`.
+- [ ] **Optimizer numbers:** rerun before quoting: `npx vitest run tests/team-optimality.test.ts --silent=false`.
+  - It prints `[team-bench] trials=… exact-optimum-hit-rate=… worst-ratio=…`.
+  - **Verified by Claude, Nov 7 ~10:45 PM:** `trials=104 exact-optimum-hit-rate=100.0% worst-ratio=1.0000`.
+  - **Safe wording:** "matched exhaustive search in all 104 seeded test scenarios". The match is at the test's 3-decimal precision.
+  - **Not:** "provably optimal" or "best team".
+  - The test itself only asserts ≥95% exact and within 1%.
 
-**Backup plan:** if wifi dies, run it on localhost on the laptop. Everything works offline except Claude, and the rules engine takes over automatically (the badge says which one ran).
+## 90-second live demo (expo table)
+1. **Landing → "Try the demo".**
+   - Say: "You just arrived and don't know anyone."
+   - Log in with one tap.
+2. **Home → type an idea into the purple box** (e.g. "AI app that helps nursing students study — I need a developer and a designer") → **Build**.
+   - Show the stages: roles → candidates → team.
+   - Then the result: per-role coverage, *why* each person was picked, and the solver panel (exact search when the space is small, heuristic + local search when it's big).
+3. **Invite → team room.**
+   - On the laptop, **act as one of the invited personas** (`/demo`) → Connections → Teams → **Join**.
+   - The phone's team room updates **instantly**. That's server-sent events, no refresh.
+4. **Nearby (map).**
+   - Show face pins ringed by fit score, event towers on the UNC Charlotte campus, and the collapsible people sheet.
+   - Say: "Pins are offset per viewer and reshuffle every 15 minutes. Small groups show as a crowd. Ghost mode is one tap."
+5. **Events.**
+   - Show the **Real only** chip: these are live UNC Charlotte campus and NinerEngage listings, filtered from roughly 1,600 calendar entries down to networking-worthy ones.
+   - Open one → **Lounge**. Post from the laptop and it appears on the phone immediately.
+6. **Close:** "From *I have an idea* to *we're a team*, with every step explained and under your control."
 
-## 2-minute video script (shot list)
+**Backup plan:**
+- If Wi-Fi dies, run on the laptop at localhost. Everything works without internet except Claude (the rules engine takes over and the badge says so) and the calendar refresh (already-imported events stay).
+
+## 2-minute video (shot list, ≤ 2:00)
 
 | Time | On screen | Voiceover |
 |---|---|---|
-| 0:00–0:15 | The CrownHacks mixer, then the app's landing page | "Half the people at a hackathon arrive without a team. Finding the right people is luck." |
-| 0:15–0:30 | Onboarding Quick start, "build my team" | "Connected starts with what you want to build, not your résumé." |
-| 0:30–0:55 | Team Builder stages, then the result with coverage | "It works out the roles, then optimizes a complementary team from people at this event who opted in, and explains every pick." |
-| 0:55–1:10 | Under the hood: exact search, benchmark | "Not an LLM wrapper. A real optimizer: exact when it can be, near-optimal when it can't, tested against brute force." |
-| 1:10–1:30 | Invite → teammate accepts → Team formed | "Then it gets you to a real conversation. Each person decides; nothing is sent without approval." |
-| 1:30–1:45 | Zone map, check-in, privacy copy | "Zones, not GPS. Location is checked on your phone and never leaves it." |
-| 1:45–2:00 | Organizer insights, then the logo | "Organizers see which skills are missing. Connected: find your people, build what's next." |
+| 0:00–0:12 | Landing page on a phone | "At a hackathon, the hardest part often isn't the code. It's finding the right people, fast." |
+| 0:12–0:30 | Home → type an idea → Team Builder stages | "Connected starts with what you want to build. It turns your idea into the roles it needs." |
+| 0:30–0:50 | Team result: coverage per role, reasons, solver panel | "Then it searches people at this event who opted in, and optimizes a complementary team: exact search when it can, a benchmarked heuristic when it can't. Every pick is explained from real profile fields." |
+| 0:50–1:05 | Invite → laptop persona joins → phone room updates live | "Invites go out only when you approve them. When a teammate joins, everyone sees it instantly." |
+| 1:05–1:25 | Nearby map: face pins, event towers, sheet; privacy copy | "Nearby shows who's around and worth meeting, never anyone's GPS. Pins are offset per viewer and reshuffle every fifteen minutes; small groups show as a crowd; ghost mode is one tap." |
+| 1:25–1:45 | Events: "Live from UNC Charlotte" + Real only → event → Lounge | "Events are real: we read UNC Charlotte's public calendars, keep the ones worth networking at, and give each one a live chat." |
+| 1:45–2:00 | Back to Home, logo | "Find your people. Build what's next. Connected." Then the on-screen caption: "Demo profiles are fictional · real events from public UNC Charlotte calendars". |
 
-## Longer presentation (3 minutes)
-1. **Problem (30s):** first-timers, random team formation, networking that doesn't lead anywhere. Cite the research only from the "safe claims" list in [[04 Research - Competitors & Papers]].
-2. **Demo (90s):** the flow above.
-3. **How it works (40s):** reciprocal matching → team objective → exact or heuristic solver → benchmark. Claude only interprets goals and drafts intros.
-4. **Trust (15s):** opt-in, zones, on-device location, required asks, request caps.
-5. **What's next (15s):** organizer dashboard as the business, outcome ratings to learn better weights, Supabase deployment.
+## Devpost write-up (draft)
+
+**Inspiration.** At hackathons and career events, lots of people show up with an idea or a skill and no team. Networking apps tell you *who people are*; we wanted something that tells you *who to build with*, and then gets you into an actual conversation.
+
+**What it does:**
+- **AI Team Builder:** describe a project, and Connected infers the roles it needs and assembles a complementary team (up to 4 including you) from people at the event who opted in. It explains each pick and shows the coverage of every role.
+- **Explainable, reciprocal matching:** your fit for them counts, not just theirs for you.
+- **Nearby map:** compatible people and event towers on a 3D campus map, with built-in anti-stalking protection.
+- **Real events:** live UNC Charlotte campus and NinerEngage calendars, filtered to networking-worthy events, plus import from any public calendar link.
+- **Realtime:** event lounges with chat and a photo wall, team rooms and alerts that update instantly.
+- **Connected accounts:** link LinkedIn, Instagram, GitHub and X. GitHub and résumé/LinkedIn text import suggest skills with evidence.
+
+**How we built it:**
+- **Stack:** Next.js 16 (App Router) + React 19 + TypeScript + Tailwind v4. MapLibre GL with OpenFreeMap tiles.
+- **Team formation:**
+  - Reciprocal scoring over a 54-skill ontology.
+  - Coverage modeled as noisy-OR.
+  - Exact enumeration for small candidate spaces; multi-start greedy + local search for large ones.
+  - Exact role assignment, benchmarked against exhaustive search in the test suite.
+- **AI:** Claude (structured outputs) interprets goals and drafts intros, with a deterministic rules fallback.
+- **Privacy on the server:**
+  - Per-viewer location jitter, k-anonymous crowds and view limits.
+  - Check-in is decided on the device by a geofence.
+- **Calendar import:** a dependency-free RFC 5545 parser (time zones, recurrence, GEO, categories) behind an SSRF-guarded fetch.
+- **Realtime:** server-sent events with per-topic authorization.
+- **Accounts:** scrypt passwords and signed, expiring session cookies.
+
+**Challenges.**
+- **Optimizer quality:** making team formation optimal enough without a solver dependency.
+- **A map that doesn't stalk:** showing who's nearby without enabling stalking.
+- **Calendar noise:** campus calendars have 1,000+ entries a month, mostly study sessions and games.
+- **Two AI agents, one repo:** coordinating Claude and Codex in the same codebase through shared notes.
+
+**Accomplishments.**
+- An explainable team optimizer with tests.
+- Privacy rules that are enforced *and tested* on the server.
+- Real UNC Charlotte events flowing into the app automatically.
+- Realtime updates, and a polished, mobile-first UI.
+
+**What we learned.**
+- Trust features have to live on the server.
+- "Explainable" has to mean the score decomposes into fields the person actually wrote.
+
+**What's next.**
+- An organizer dashboard (skill supply vs. demand).
+- Outcome ratings to learn better weights.
+- Shared database + message broker for multi-instance hosting.
+- Verified email/OAuth.
+
+**Built with:** nextjs, react, typescript, tailwindcss, maplibre, openfreemap, anthropic-claude, zod, vitest, motion.
 
 ## Hard judge questions → answers
-- **"Isn't this just ChatGPT?"** "Claude only turns your sentence into roles and drafts an intro. Ranking and team selection are deterministic code you can test. Here's the benchmark."
-- **"Grip and Brella already match attendees."** "One-to-one. We form multi-person teams around a goal, and explain the gaps."
-- **"What about cold start?"** "We launch inside one event where everyone already is. The organizer pushes the opt-in. Value shows up with about 20 people."
-- **"How do you know the match is good?"** "Every score breaks down into factors from the profile. And we measure outcomes: was the conversation useful, did a team form."
-- **"Privacy?"** "Opt-in per event, zones not pins, location checked on the device, every request needs a specific ask, request caps, block."
-- **"Is 99% optimal real?"** "On 96 seeded scenarios: 95 matched brute force exactly, and the worst was within 0.5%. It's in the repo as a test."
+- **"Isn't this just ChatGPT?"** "The LLM only interprets your goal and drafts an intro. Matching and team selection are deterministic code with tests. If the AI is off, everything still works on the rules engine."
+- **"Grip, Brella and A.Team already do matchmaking."** "Team formation and event matchmaking exist. Our bet is the combination: start from a project, optimize a *complementary* team with explanations, scope it to the event you're physically at, and enforce privacy on the server."
+- **"How do you know the teams are good?"** "We optimize a declared objective, role coverage plus cohesion, over what people wrote. On 104 seeded test scenarios, our fast solver matched exhaustive search every time. That proves the *solver*, not human chemistry. That's why we collect 'was this useful?' ratings."
+- **"Are these people real?"** "The profiles in the demo are fictional and labeled. The events marked Imported are real UNC Charlotte listings."
+- **"Privacy?"**
+  - Opt-in per event, and only while it's live.
+  - Pins offset per viewer and reshuffled every 15 minutes.
+  - Fewer than 3 people show as a crowd.
+  - Ghost mode, profile-view limits, blocking.
+  - Location check-in happens on the phone; only "checked in" is sent.
+- **"Does it scale?"** "Today it's one Node process with a file store and an in-memory event bus. That's fine for one event. Multiple servers need a shared database and broker; the schema is in `supabase/schema.sql`."
