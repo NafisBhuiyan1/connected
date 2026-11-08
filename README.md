@@ -7,16 +7,17 @@
 ## Download and run (for teammates)
 
 1. **Get the code:**
-   - Click **Code → Download ZIP** on GitHub and unzip it, or run `git clone https://github.com/NafisBhuiyan1/connected.git`.
-2. **Install [Node.js 20+](https://nodejs.org).** Then, in the project folder:
+   - [Download the ZIP](https://github.com/NafisBhuiyan1/connected/archive/refs/heads/main.zip) and unzip it (you get a `connected-main` folder), or run `git clone https://github.com/NafisBhuiyan1/connected.git`.
+2. **Install [Node.js](https://nodejs.org)**, the LTS version (Next.js needs 20.9 or newer). Then open a terminal in the project folder and run:
 
    ```bash
    npm install
    npm run dev
    ```
 
-3. **Open http://localhost:3000.**
-   - Click **Try the demo**, or log in with `demo@connected.app` / `crownhacks`.
+   - Windows: if PowerShell says "running scripts is disabled", use Command Prompt, or type `npm.cmd` instead of `npm`.
+3. **Open http://localhost:3000/login** and click **Try the demo account** (`demo@connected.app` / `crownhacks`).
+   - Each page takes a few seconds the first time while it compiles.
 4. **Optional:**
    - Put `ANTHROPIC_API_KEY=...` in a `.env.local` file to turn on Claude. Without it, the built-in rules engine runs, and the app labels which one answered.
    - For production (`npm run build` then `npm start`), set a long random `SESSION_SECRET` in `.env.local`. Without it, sign-in is refused on purpose (HTTP 503). Make one with:
