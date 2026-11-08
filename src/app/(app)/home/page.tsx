@@ -202,7 +202,7 @@ export default function HomePage() {
               All events →
             </Link>
           </div>
-          <div className="scrollbar-none -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
+          <div className="scrollbar-none -mx-4 flex snap-x scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:scroll-px-0 sm:px-0">
             {(data?.events ?? Array.from({ length: 4 }).map(() => null)).map((e, i) =>
               e ? (
                 <EventTile key={e.event.id} rec={e} people={data!.eventPeople} index={i} />
@@ -284,7 +284,7 @@ export default function HomePage() {
               {loading && !data ? (
                 <LoadingCards n={2} />
               ) : (
-                <div className="scrollbar-none -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
+                <div className="scrollbar-none -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:scroll-px-0 sm:px-0">
                   {data?.matches.map((m, i) => (
                     <div key={m.profile.id} className="w-[86%] shrink-0 snap-center sm:w-[340px]">
                       <MatchCard match={m} rank={i} eventId={data.liveEventId ?? undefined} onChanged={reload} />
