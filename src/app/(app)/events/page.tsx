@@ -5,6 +5,7 @@ import { ArrowRight, Briefcase, CalendarDays, CheckCircle2, GraduationCap, Landm
 import Link from "next/link";
 import { useState } from "react";
 import { ImportEventsButton } from "@/components/import-events";
+import { EventCover } from "@/components/event-cover";
 import { fmtDistance, haversineM, NearMeButton } from "@/components/location";
 import { PeopleStack } from "@/components/people";
 import { Badge, Card, cx, Empty, ErrorBox, PageHeader, Progress, Skeleton } from "@/components/ui";
@@ -172,7 +173,7 @@ function FeaturedEvent({ rec, people, distance }: { rec: EventRecommendation; pe
       <Link href={`/events/${ev.id}`} className="group block">
         <div className="brand-gradient relative overflow-hidden rounded-3xl p-[1.5px] shadow-[var(--shadow-lift)]">
           <div className="relative overflow-hidden rounded-[22px] bg-surface p-5 sm:p-7">
-            <div className="brand-gradient-soft pointer-events-none absolute inset-0" />
+            <EventCover event={ev} variant="hero" priority live={rec.live} attendees={rec.attendeeCount} className="-mx-5 -mt-5 mb-5 sm:-mx-7 sm:-mt-7 sm:mb-6" />
             <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -181,6 +182,7 @@ function FeaturedEvent({ rec, people, distance }: { rec: EventRecommendation; pe
                   </Badge>
                   <Badge tone="brand">{KIND_LABEL[ev.kind]}</Badge>
                   {ev.isSample ? <Badge>Sample event</Badge> : null}
+                  {ev.source?.kind === "ics" ? <Badge tone="green">Imported</Badge> : null}
                   {rec.optedIn ? (
                     <Badge tone="violet" icon={<CheckCircle2 className="size-3" />}>
                       You&apos;re opted in
@@ -251,26 +253,6 @@ const COVER: Record<ConnectedEvent["kind"], { from: string; to: string; icon: Re
   seminar: { from: "#3b0764", to: "#a855f7", icon: GraduationCap },
 };
 
-function EventCover({ kind, start, live, attendees }: { kind: ConnectedEvent["kind"]; start: string; live: boolean; attendees: number }) {
-  const c = COVER[kind];
-  const d = new Date(start);
-  return (
-    <div className="relative -mx-5 -mt-5 mb-4 h-32 overflow-hidden" style={{ background: `linear-gradient(135deg, ${c.from}, ${c.to})` }}>
-      <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.5) 1px, transparent 1px)", backgroundSize: "14px 14px" }} />
-      <div className="absolute -right-6 -bottom-8 size-36 rounded-full bg-white/15 blur-2xl" />
-      <c.icon className="absolute right-5 bottom-4 size-14 text-white/85 drop-shadow-[0_0_18px_rgba(255,255,255,0.6)]" />
-      <div className="absolute top-3 left-4 flex flex-col items-center rounded-xl bg-black/30 px-2.5 py-1 text-white backdrop-blur">
-        <span className="text-[10px] font-semibold tracking-wide uppercase">{d.toLocaleDateString("en-US", { month: "short" })}</span>
-        <span className="text-[20px] leading-none font-bold">{d.getDate()}</span>
-      </div>
-      <div className="absolute bottom-3 left-4 flex items-center gap-1.5 text-[12px] font-medium text-white/90">
-        {live ? <span className="size-2 rounded-full bg-emerald-300 shadow-[0_0_8px_#6ee7b7]" /> : null}
-        {attendees} going
-      </div>
-    </div>
-  );
-}
-
 function EventCard({ rec, people, index, distance }: { rec: EventRecommendation; people: Record<string, PublicProfile>; index: number; distance?: number }) {
   const ev = rec.event;
   const top = rec.topPeople.map((t) => people[t.userId]).filter(Boolean);
@@ -279,7 +261,7 @@ function EventCard({ rec, people, index, distance }: { rec: EventRecommendation;
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: Math.min(0.4, index * 0.05) }}>
       <Link href={`/events/${ev.id}`} className="block h-full">
         <Card className="card-hover flex h-full flex-col overflow-hidden p-5">
-          <EventCover kind={ev.kind} start={ev.start} live={rec.live} attendees={rec.attendeeCount} />
+          <EventCover event={ev} live={rec.live} attendees={rec.attendeeCount} className="-mx-5 -mt-5 mb-4" />
           <div className="flex items-start justify-between gap-3">
             <div className="flex flex-wrap items-center gap-1.5">
               <Badge tone="brand">{KIND_LABEL[ev.kind]}</Badge>

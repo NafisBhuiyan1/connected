@@ -1,4 +1,6 @@
 // Core domain model for Connected. Shared by the engine, the API and the UI.
+import type { LoungeChannel } from "./lounge-channels";
+export type { LoungeChannel } from "./lounge-channels";
 
 export type Level = 1 | 2 | 3; // 1 = familiar, 2 = proficient, 3 = expert
 
@@ -87,6 +89,8 @@ export interface LoungeMessage {
   eventId: string;
   userId: string;
   body: string;
+  /** Older stored messages belong to General. */
+  channel?: LoungeChannel;
   createdAt: string;
   reports: string[]; // user ids; auto-hidden at 3
 }
@@ -143,6 +147,8 @@ export interface ConnectedEvent {
   source?: { kind: "ics"; feed: string; uid: string; importedBy: string; importedAt: string; approximate?: boolean };
   /** The organizer's own page for the event. */
   link?: string;
+  /** Optional image explicitly published in the source calendar, never an inferred event photo. */
+  imageUrl?: string;
 }
 
 export type LiveMode = "quick-chat" | "team-up" | "mentoring" | "heads-down";

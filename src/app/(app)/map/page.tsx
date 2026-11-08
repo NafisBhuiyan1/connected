@@ -38,8 +38,8 @@ interface MapData {
 
 const FILTERS = [
   { id: "all", label: "Everyone", min: 0 },
-  { id: "good", label: "60%+", min: 60 },
-  { id: "great", label: "80%+", min: 80 },
+  { id: "good", label: "60+ compatibility", min: 60 },
+  { id: "great", label: "80+ compatibility", min: 80 },
   { id: "open", label: "Open now", min: 0 },
 ] as const;
 
@@ -57,11 +57,6 @@ export default function NearbyPage() {
   const { state: geo, locate } = useDevicePosition();
   const [myPos, setMyPos] = useState<{ lat: number; lng: number } | null>(null);
   const rail = useRef<HTMLDivElement>(null);
-
-  // Desktop has room for the people rail; phones start with the map clear.
-  useEffect(() => {
-    if (window.innerWidth >= 768) setSheetOpen(true);
-  }, []);
 
   const people = useMemo(() => {
     const f = FILTERS.find((x) => x.id === filter)!;
@@ -145,6 +140,8 @@ export default function NearbyPage() {
                 onChange={(e) => {
                   setEventId(e.target.value);
                   setSelected(null);
+                  setSelectedEvent(null);
+                  setSheetOpen(false);
                   const ev = data?.events.find((x) => x.id === e.target.value);
                   if (ev) setFly({ lat: ev.lat, lng: ev.lng, zoom: 16.2, key: Date.now() });
                 }}
@@ -158,7 +155,7 @@ export default function NearbyPage() {
                   </option>
                 ))}
               </select>
-              <span className="shrink-0 text-[12px] text-muted">{data ? `${people.length} here` : ""}</span>
+              <span className="shrink-0 text-[12px] text-muted">{data ? `${people.length} shown` : ""}</span>
             </div>
             <Link href={`/events/${data?.focus.id ?? ""}#lounge`} aria-label="Event chat" className="glass flex size-11 shrink-0 items-center justify-center rounded-2xl text-brand-700">
               <MessageCircle className="size-[18px]" />
@@ -174,6 +171,7 @@ export default function NearbyPage() {
                 onClick={() => {
                   play("tap");
                   setFilter(f.id);
+                  setSelected(null);
                 }}
                 className={cx(
                   "shrink-0 rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors",
@@ -249,11 +247,13 @@ export default function NearbyPage() {
                     setSheetOpen(false);
                   }}
                   className="glass inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold text-ink-2"
+                  aria-expanded="true"
+                  aria-controls="nearby-people-list"
                 >
                   <ChevronDown className="size-4" /> Hide people
                 </button>
               </div>
-              <div ref={rail} className="scrollbar-none pointer-events-auto flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-1 sm:px-4">
+              <div id="nearby-people-list" ref={rail} className="scrollbar-none pointer-events-auto flex snap-x snap-mandatory scroll-px-3 gap-3 overflow-x-auto px-3 pb-1 sm:scroll-px-4 sm:px-4">
                 {people.map((p) => (
                   <PersonCard
                     key={p.profile.id}
@@ -276,6 +276,7 @@ export default function NearbyPage() {
                   setSheetOpen(true);
                 }}
                 className="inline-flex items-center gap-2.5 rounded-full bg-white py-1.5 pr-4 pl-1.5 text-[13.5px] font-semibold text-ink shadow-[0_12px_32px_-12px_rgba(76,29,149,0.5)] ring-1 ring-line"
+                aria-expanded="false"
               >
                 <span className="flex -space-x-2">
                   {people.slice(0, 3).map((p) => (
@@ -333,7 +334,10 @@ function PersonCard({ p, active, onFocus, onConnect }: { p: MapPerson; active: b
           </div>
           <p className="truncate text-[12px] text-muted">{p.profile.headline}</p>
         </div>
-        <ScoreRing score={p.score} size={42} />
+        <div className="flex shrink-0 flex-col items-center gap-0.5" title="Algorithmic compatibility estimate — not a prediction of success">
+          <ScoreRing score={p.score} size={36} />
+          <span className="text-[9px] text-muted">Compatibility</span>
+        </div>
       </div>
       <div className="mt-2.5 flex flex-wrap gap-1.5 text-[11px]">
         {p.liveLabel ? <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700">{p.liveLabel}</span> : null}

@@ -1,3 +1,27 @@
+.heroTitle {
+  font-family: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(40px, 10.8vw, 52px);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -.052em;
+  text-wrap: balance;
+}
+.sectionTitle {
+  font-family: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(32px, 4vw, 42px);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -.042em;
+  text-wrap: balance;
+}
+.primaryAction { position: relative; overflow: hidden; transition: background-color .2s, transform .2s, box-shadow .2s; }
+.primaryAction::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 25%, #ffffff28 50%, transparent 75%); transform: translateX(-110%); transition: transform .6s; pointer-events: none; }
+.primaryAction:hover { transform: translateY(-2px); box-shadow: 0 17px 30px -12px #7c3aed88; }
+.primaryAction:hover::after { transform: translateX(110%); }
+.primaryAction:focus-visible { outline: 2px solid #7c3aed; outline-offset: 4px; }
+@media (min-width: 1024px) {
+  .heroTitle { font-size: clamp(52px, 4.5vw, 64px); }
+}
 .scene {
   position: relative;
   width: 100%;
@@ -31,10 +55,14 @@
 .phone { position: absolute; inset: 65px 0 auto; }
 .phone > div { transform: scale(.93); transform-origin: top center; }
 .ideaCard, .matchCard { position: absolute; z-index: 2; border: 1px solid #ede9fe; border-radius: 19px; background: #fff; box-shadow: 0 14px 32px -16px #170a4260; }
-.ideaCard { top: 155px; left: -25px; display: flex; align-items: flex-start; gap: 10px; padding: 15px 18px 15px 14px; transform: rotate(-4deg); }
+.ideaCard { top: 155px; left: -25px; display: flex; align-items: flex-start; gap: 10px; width: 216px; min-height: 112px; padding: 15px 18px 15px 14px; }
 .cardIcon { display: grid; place-items: center; width: 32px; height: 32px; flex-shrink: 0; border-radius: 11px; color: #7c3aed; background: #f5f3ff; }
 .eyebrow { display: block; margin-bottom: 5px; color: #786a90; font-size: 10px; }
 .ideaCard p { margin: 0; color: #26183c; font-size: 14px; font-weight: 600; line-height: 1.35; }
+.ideaCopy { min-width: 0; }
+.storyDots { display: flex; gap: 4px; margin-top: 9px; }
+.storyDots span { width: 12px; height: 3px; border-radius: 3px; background: #e9e1f6; transition: background-color .25s; }
+.storyDots .activeDot { background: #8b5cf6; }
 .matchCard { right: -20px; bottom: 126px; width: 214px; padding: 13px; }
 .matchTitle { display: flex; align-items: center; gap: 6px; color: #6d28d9; font-size: 10px; font-weight: 600; }
 .matchTitle svg:last-child { margin-left: auto; color: #059669; }
@@ -68,7 +96,7 @@
   .sky { inset: 0 0 14px; border-radius: 32px 32px 95px 32px; }
   .sceneHeading { inset: 22px 18px auto; font-size: 10px; }
   .phone { top: 59px; }
-  .ideaCard { left: -8px; top: 153px; gap: 7px; padding: 11px; border-radius: 15px; }
+  .ideaCard { left: -8px; top: 153px; gap: 7px; width: 183px; min-height: 103px; padding: 11px; border-radius: 15px; }
   .ideaCard p { font-size: 12px; }
   .cardIcon { width: 27px; height: 27px; border-radius: 9px; }
   .eyebrow { font-size: 9px; }
@@ -82,6 +110,9 @@
   .trailStep p { font-size: 10px; line-height: 1.5; max-width: 100px; }
 }
 @media (prefers-reduced-motion: reduce) {
+  .primaryAction, .primaryAction::after, .storyDots span { transition: none; }
+  .primaryAction:hover { transform: none; }
+  .primaryAction::after { display: none; }
   .scrollCue svg { transition: none; }
   .scrollCue:hover svg { transform: none; }
 }

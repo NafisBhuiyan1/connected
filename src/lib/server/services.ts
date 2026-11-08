@@ -25,6 +25,7 @@ import type { ConnectedEvent, Prefs } from "../types";
 import { draftIntro, understandGoal, type AiSource } from "./ai";
 import { publish } from "./bus";
 import { getDb, mutate, newId } from "./store";
+import { isLoungeChannel, LOUNGE_CHANNELS, type LoungeChannel } from "../lounge-channels";
 
 export class ApiError extends Error {
   constructor(
@@ -1358,12 +1359,15 @@ function requireMember(db: Database, me: Profile, eventId: string) {
   return ev;
 }
 
-export function lounge(me: Profile, eventId: string) {
+export function lounge(me: Profile, eventId: string, channel: LoungeChannel = "general") {
+  if (!isLoungeChannel(channel)) throw new ApiError(400, "Unknown lounge channel.");
   const db = getDb();
   const ev = requireMember(db, me, eventId);
   const authors = new Map<string, PublicProfile>();
-  const messages = (db.lounge ?? [])
-    .filter((m) => m.eventId === eventId && m.reports.length < REPORT_HIDE_THRESHOLD && !blocked(db, me.id, m.userId))
+  const visible = (db.lounge ?? []).filter((m) => m.eventId === eventId && m.reports.length < REPORT_HIDE_THRESHOLD && !blocked(db, me.id, m.userId));
+  const channels = LOUNGE_CHANNELS.map((item) => ({ id: item.id, label: item.label, count: visible.filter((m) => (m.channel ?? "general") === item.id).length }));
+  const messages = visible
+    .filter((m) => (m.channel ?? "general") === channel)
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
     .slice(-100)
     .map((m) => {
@@ -1371,7 +1375,7 @@ export function lounge(me: Profile, eventId: string) {
         const p = db.profiles.find((x) => x.id === m.userId);
         if (p) authors.set(m.userId, pub(db, me, p));
       }
-      return { id: m.id, userId: m.userId, body: m.body, createdAt: m.createdAt, mine: m.userId === me.id, reportedByMe: m.reports.includes(me.id) };
+      return { id: m.id, userId: m.userId, body: m.body, channel: m.channel ?? "general", createdAt: m.createdAt, mine: m.userId === me.id, reportedByMe: m.reports.includes(me.id) };
     });
   const photos = (db.photos ?? [])
     .filter((p) => p.eventId === eventId && p.reports.length < REPORT_HIDE_THRESHOLD && !blocked(db, me.id, p.userId))
@@ -1384,10 +1388,11 @@ export function lounge(me: Profile, eventId: string) {
       return { id: p.id, userId: p.userId, caption: p.caption, url: `/api/photos/${p.id}`, likes: p.likes.length, likedByMe: p.likes.includes(me.id), createdAt: p.createdAt, mine: p.userId === me.id };
     });
   const online = db.memberships.filter((m) => m.eventId === eventId && m.optIn && m.checkedInAt).length;
-  return { event: { id: ev.id, title: ev.title }, messages, photos, authors: Object.fromEntries(authors), online };
+  return { event: { id: ev.id, title: ev.title }, channel, channels, messages, photos, authors: Object.fromEntries(authors), online };
 }
 
-export function postLounge(me: Profile, eventId: string, body: string) {
+export function postLounge(me: Profile, eventId: string, body: string, channel: LoungeChannel = "general") {
+  if (!isLoungeChannel(channel)) throw new ApiError(400, "Unknown lounge channel.");
   const text = body.trim();
   if (!text) throw new ApiError(400, "Message is empty.");
   if (text.length > 500) throw new ApiError(400, "Keep it under 500 characters.");
@@ -1398,7 +1403,7 @@ export function postLounge(me: Profile, eventId: string, body: string) {
     const mine = db.lounge.filter((m) => m.userId === me.id && now - new Date(m.createdAt).getTime() < 10 * 60_000);
     if (mine.some((m) => now - new Date(m.createdAt).getTime() < 2_500)) throw new ApiError(429, "Slow down a little.");
     if (mine.length >= 20) throw new ApiError(429, "You've posted a lot — take a short break.");
-    const msg = { id: newId("lg"), eventId, userId: me.id, body: text, createdAt: new Date(now).toISOString(), reports: [] as string[] };
+    const msg = { id: newId("lg"), eventId, userId: me.id, body: text, channel, createdAt: new Date(now).toISOString(), reports: [] as string[] };
     db.lounge.push(msg);
     if (db.lounge.length > 5000) db.lounge.splice(0, db.lounge.length - 5000);
     publish(`lounge:${eventId}`);
@@ -1410,6 +1415,7 @@ export function reportLounge(me: Profile, messageId: string) {
   return mutate((db) => {
     const m = (db.lounge ?? []).find((x) => x.id === messageId);
     if (!m) throw new ApiError(404, "Message not found");
+    requireMember(db, me, m.eventId);
     publish(`lounge:${m.eventId}`);
     if (m.userId === me.id) {
       db.lounge = db.lounge.filter((x) => x.id !== messageId); // reporting your own = delete

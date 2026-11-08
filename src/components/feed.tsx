@@ -23,6 +23,13 @@ const KINDS: { id: PostKind; label: string; icon: typeof PenLine; tint: string }
   { id: "offering", label: "Can help", icon: HandHeart, tint: "text-emerald-700 bg-emerald-50" },
 ];
 
+const FEED_FILTERS: { id: "all" | PostKind; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "looking", label: "Looking for teammates" },
+  { id: "offering", label: "Can help" },
+  { id: "update", label: "Updates" },
+];
+
 export function Composer({ me, onPosted }: { me: Profile; onPosted: () => void }) {
   const toast = useToast();
   const [body, setBody] = useState("");
@@ -83,13 +90,31 @@ export function Composer({ me, onPosted }: { me: Profile; onPosted: () => void }
 }
 
 export function Feed({ me }: { me: Profile }) {
-  const { data, reload, setData } = useApi<{ items: FeedItem[] }>("/api/feed", { poll: 15_000 });
+  const { data, error, reload, setData } = useApi<{ items: FeedItem[] }>("/api/feed", { poll: 15_000 });
+  const [filter, setFilter] = useState<"all" | PostKind>("all");
+  const items = data?.items.filter((item) => filter === "all" || (item.type === "post" && item.post.kind === filter)) ?? [];
+  const emptyTitle = { all: "No posts or activity yet", looking: "No teammate requests in this feed", offering: "No offers to help in this feed", update: "No updates in this feed" }[filter];
   return (
     <div className="space-y-3">
-      <Composer me={me} onPosted={reload} />
+      <Composer me={me} onPosted={() => { setFilter("all"); void reload(); }} />
+      <div role="group" aria-label="Feed filters" className="scrollbar-none flex gap-1.5 overflow-x-auto py-1">
+        {FEED_FILTERS.map((f) => (
+          <button key={f.id} type="button" aria-pressed={filter === f.id} aria-controls="community-feed-results" onClick={() => setFilter(f.id)}
+            className={cx("focus-ring shrink-0 rounded-full px-3.5 py-2 text-[12.5px] font-semibold transition-colors", filter === f.id ? "bg-brand-600 text-white" : "bg-white text-muted ring-1 ring-inset ring-line hover:bg-brand-50 hover:text-brand-700")}>
+            {f.label}
+          </button>
+        ))}
+      </div>
+      {error ? (
+        <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-[13px] text-rose-800">
+          <p>Couldn&apos;t refresh the feed. {error}</p>
+          <button type="button" onClick={() => void reload()} className="mt-1 font-semibold underline">Try again</button>
+        </div>
+      ) : null}
+      <div id="community-feed-results" className="space-y-3">
       {!data
-        ? Array.from({ length: 3 }).map((_, i) => <div key={i} className="skeleton h-36" />)
-        : data.items.map((item, i) => (
+        ? !error && Array.from({ length: 3 }).map((_, i) => <div key={i} className="skeleton h-36" />)
+        : items.length ? items.map((item, i) => (
             <motion.div
               key={item.id}
               initial={{ opacity: 0, y: 18 }}
@@ -105,7 +130,14 @@ export function Feed({ me }: { me: Profile }) {
                 onDeleted={() => setData((d) => (d ? { items: d.items.filter((x) => x.id !== item.id) } : d))}
               />
             </motion.div>
-          ))}
+          )) : (
+            <div className="card px-5 py-9 text-center">
+              <p className="text-[14px] font-semibold text-ink">{emptyTitle}</p>
+              <p className="mt-1 text-[13px] leading-relaxed text-muted">{filter === "all" ? "Share what you want to build or what you can help with above." : "Try another filter, or start the conversation with a post above."}</p>
+              {filter !== "all" ? <button type="button" onClick={() => setFilter("all")} className="focus-ring mt-3 rounded-lg px-2 py-1 text-[13px] font-semibold text-brand-700">Show all activity</button> : null}
+            </div>
+          )}
+      </div>
     </div>
   );
 }

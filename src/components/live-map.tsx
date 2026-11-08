@@ -4,6 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import type { Map as MLMap, Marker } from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
 import { faceUri } from "./ui";
+import styles from "./live-map.module.css";
 
 export interface MapEvent {
   id: string;
@@ -65,9 +66,13 @@ function neonify(map: MLMap) {
         } else if (/rail/.test(id)) map.setPaintProperty(id, "line-color", "#d7d2e8");
         else if (/boundary|admin/.test(id)) map.setPaintProperty(id, "line-color", "#c9bdf0");
       } else if (layer.type === "symbol") {
-        map.setPaintProperty(id, "text-color", "#4c3a8f");
+        if (/poi|housenumber|transit|aeroway/.test(id)) {
+          map.setLayoutProperty(id, "visibility", "none");
+          continue;
+        }
+        map.setPaintProperty(id, "text-color", "#756b87");
         map.setPaintProperty(id, "text-halo-color", "#ffffff");
-        map.setPaintProperty(id, "text-halo-width", 1.4);
+        map.setPaintProperty(id, "text-halo-width", 1);
         if (/poi/.test(id)) map.setPaintProperty(id, "icon-opacity", 0.55);
       } else if (layer.type === "fill-extrusion") {
         map.setLayoutProperty(id, "visibility", "none");
@@ -108,14 +113,14 @@ function towerEl(ev: MapEvent, focused: boolean): HTMLElement {
   const el = document.createElement("button");
   el.type = "button";
   el.className = `cx-tower${ev.live ? " is-live" : ""}${focused ? " is-focus" : ""}${ev.joined ? " is-joined" : ""}`;
-  const size = Math.round(34 + Math.min(26, ev.attendees * 0.7));
+  const size = Math.round((focused ? 28 : 24) + Math.min(8, ev.attendees * 0.2));
   el.style.setProperty("--s", `${size}px`);
   el.setAttribute("aria-label", `${ev.title}, ${ev.attendees} attending`);
   el.innerHTML = `
     <span class="cx-tower-beam"></span>
     <span class="cx-tower-ring"></span>
     <span class="cx-tower-core"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${KIND_ICON[ev.kind] ?? KIND_ICON.meetup}"/></svg></span>
-    <span class="cx-tower-count">${ev.attendees}</span>`;
+    ${focused ? `<span class="cx-tower-count">${ev.attendees}</span>` : ""}`;
   return el;
 }
 
@@ -129,11 +134,12 @@ function personEl(p: MapPersonPin, index: number, selected: boolean): HTMLElemen
   const tier = p.score >= 80 ? "t1" : p.score >= 60 ? "t2" : "t3";
   el.className = `cx-pin ${tier}${p.live ? " is-live" : ""}${selected ? " is-selected" : ""}`;
   el.style.animationDelay = `${Math.min(index, 20) * 45}ms`;
-  el.setAttribute("aria-label", `${p.name}, ${p.score}% match`);
+  el.setAttribute("aria-label", `${p.name}, compatibility ${p.score} out of 100, an algorithmic estimate`);
+  el.title = `${p.name} · compatibility ${p.score}/100 (estimate, not a prediction of success)`;
   el.innerHTML = `
     <span class="cx-pin-pulse"></span>
     <img src="${faceUri(p.name, p.hue)}" alt="" draggable="false" />
-    <span class="cx-pin-score">${p.score}</span>
+    ${selected ? `<span class="cx-pin-score">${p.score} compatibility</span>` : ""}
     ${p.hereNow ? '<span class="cx-pin-here" title="Checked in"></span>' : ""}`;
   wrap.appendChild(el);
   return wrap;
@@ -284,7 +290,7 @@ export function LiveMap({
   }, [myPosition, ready]);
 
   return (
-    <div className="relative size-full overflow-hidden bg-[#f7f5fe]">
+    <div className={`${styles.map} relative size-full overflow-hidden bg-[#f7f5fe]`}>
       <div ref={box} className="size-full" />
       {!ready && !failed ? (
         <div className="absolute inset-0 flex items-center justify-center">

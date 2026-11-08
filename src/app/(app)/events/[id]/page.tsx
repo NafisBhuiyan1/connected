@@ -28,6 +28,7 @@ import { Badge, Button, Card, Chip, cx, Empty, ErrorBox, Field, Input, Select, S
 import { ZoneLegend, ZoneMap, type MapPerson } from "@/components/zone-map";
 import { LocationCheckIn } from "@/components/location";
 import { EventLounge } from "@/components/event-lounge";
+import { EventCover } from "@/components/event-cover";
 import { ExternalLink, MapPinCheck, MessageCircle } from "lucide-react";
 import { api, fmtDateTime, fmtTime, useApi } from "@/lib/client";
 import type { EventInsights } from "@/lib/engine/events";
@@ -183,7 +184,7 @@ function BackLink() {
 function EventHeader({ event, live, attendeeCount, optedIn }: { event: ConnectedEvent; live: boolean; attendeeCount: number; optedIn: number }) {
   return (
     <div className="relative overflow-hidden rounded-3xl border border-line bg-surface p-5 shadow-[var(--shadow-card)] sm:p-7">
-      <div className="brand-gradient-soft pointer-events-none absolute inset-0" />
+      <EventCover event={event} variant="hero" priority live={live} attendees={attendeeCount} className="-mx-5 -mt-5 mb-5 sm:-mx-7 sm:-mt-7 sm:mb-6" />
       <div className="relative">
         <div className="flex flex-wrap items-center gap-2">
           {live ? (

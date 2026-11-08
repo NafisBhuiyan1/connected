@@ -1,0 +1,31 @@
+/* Keep touch targets generous while making the visible faces quieter. */
+.map :global(.cx-pin),
+.map :global(.cx-pin.t1),
+.map :global(.cx-pin.t2) {
+  width: 44px;
+  height: 44px;
+  padding: 6px;
+  background: transparent;
+  box-shadow: none;
+}
+.map :global(.cx-pin img) {
+  border: 2px solid var(--ring);
+  box-shadow: 0 3px 9px #4c1d9530;
+}
+.map :global(.cx-pin:hover),
+.map :global(.cx-pin.is-selected) { transform: scale(1.08) translateY(-2px); }
+.map :global(.cx-pin.is-selected) { outline-width: 2px; outline-offset: -2px; }
+.map :global(.cx-pin-pulse) { display: none; }
+.map :global(.cx-pin-here) { width: 10px; height: 10px; top: 5px; right: 5px; border-color: #fff; }
+.map :global(.cx-pin-score) { bottom: -8px; white-space: nowrap; font-size: 9px; }
+.map :global(.cx-tower) { min-width: 44px; }
+.map :global(.cx-tower:not(.is-focus) .cx-tower-beam) { display: none; }
+.map :global(.cx-tower-ring) { opacity: .45; border-width: 1px; }
+.map :global(.cx-tower.is-live .cx-tower-ring) { animation: none; }
+.map :global(.cx-tower-core) { border-width: 2px; box-shadow: 0 3px 10px #4c1d9535; }
+.map :global(.cx-tower-count) { min-width: 18px; padding: 0 5px; font-size: 9px; line-height: 16px; }
+.map :global(.cx-crowd) { width: 44px; height: 44px; background: #f5f3ffed; border-color: #b8a7d8; backdrop-filter: none; }
+.map :global(.cx-vignette) { opacity: .6; }
+@media (prefers-reduced-motion: reduce) {
+  .map :global(.cx-pin) { animation: none; transition: none; }
+}

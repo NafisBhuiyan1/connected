@@ -8,11 +8,14 @@ import { api, timeAgo, useApi } from "@/lib/client";
 import { useLive, useLiveStatus } from "@/lib/live";
 import { play } from "@/lib/sfx";
 import type { PublicProfile } from "@/lib/types";
+import { LOUNGE_CHANNELS, type LoungeChannel } from "@/lib/lounge-channels";
 import { useToast } from "./toast";
 import { Avatar, cx, DemoTag } from "./ui";
 
 interface LoungeData {
   event: { id: string; title: string };
+  channel: LoungeChannel;
+  channels: { id: LoungeChannel; label: string; count: number }[];
   messages: { id: string; userId: string; body: string; createdAt: string; mine: boolean; reportedByMe: boolean }[];
   photos: { id: string; userId: string; caption: string; url: string; likes: number; likedByMe: boolean; createdAt: string; mine: boolean }[];
   authors: Record<string, PublicProfile>;
@@ -21,7 +24,10 @@ interface LoungeData {
 
 export function EventLounge({ eventId, joined }: { eventId: string; joined: boolean }) {
   const [tab, setTab] = useState<"chat" | "photos">("chat");
-  const { data, error, reload, setData } = useApi<LoungeData>(joined ? `/api/events/${eventId}/lounge` : null, { poll: 20_000 });
+  const [channel, setChannel] = useState<LoungeChannel>("general");
+  const { data: received, error, reload, setData } = useApi<LoungeData>(joined ? `/api/events/${eventId}/lounge?channel=${channel}` : null, { poll: 20_000 });
+  // Do not display a previous channel's messages while the next request loads.
+  const data = received?.channel === channel ? received : null;
   const live = useLiveStatus();
   useLive([joined && `lounge:${eventId}`], () => void reload());
 
@@ -68,12 +74,21 @@ export function EventLounge({ eventId, joined }: { eventId: string; joined: bool
           </span>
         ) : null}
       </div>
-      {tab === "chat" ? <Chat eventId={eventId} data={data} reload={reload} /> : <Photos eventId={eventId} data={data} reload={reload} setData={setData} />}
+      {tab === "chat" ? <>
+        <div role="tablist" aria-label="Event chat channels" className="flex gap-1.5 overflow-x-auto border-b border-line bg-canvas/60 px-3 py-3">
+          {LOUNGE_CHANNELS.map((item) => <button
+            key={item.id} role="tab" aria-selected={channel === item.id} onClick={() => setChannel(item.id)}
+            className={cx("shrink-0 rounded-xl px-3 py-2 text-[12.5px] font-semibold transition-colors", channel === item.id ? "bg-brand-600 text-white" : "bg-white text-muted hover:text-ink")}
+          ># {item.label}<span className="ml-1.5 opacity-70">{received?.channels?.find((count) => count.id === item.id)?.count ?? 0}</span></button>)}
+        </div>
+        <p className="border-b border-line px-4 py-2 text-[12px] text-muted">{LOUNGE_CHANNELS.find((item) => item.id === channel)?.description} Only this event's members can read or post.</p>
+        <Chat key={`${eventId}:${channel}`} eventId={eventId} channel={channel} data={data} reload={reload} />
+      </> : <Photos eventId={eventId} data={data} reload={reload} setData={setData} />}
     </div>
   );
 }
 
-function Chat({ eventId, data, reload }: { eventId: string; data: LoungeData | null; reload: () => Promise<void> }) {
+function Chat({ eventId, channel, data, reload }: { eventId: string; channel: LoungeChannel; data: LoungeData | null; reload: () => Promise<void> }) {
   const toast = useToast();
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -90,7 +105,7 @@ function Chat({ eventId, data, reload }: { eventId: string; data: LoungeData | n
     if (!body) return;
     setSending(true);
     try {
-      await api(`/api/events/${eventId}/lounge`, { body: { action: "post", body } });
+      await api(`/api/events/${eventId}/lounge`, { body: { action: "post", body, channel } });
       setText("");
       play("send");
       await reload();
@@ -142,14 +157,15 @@ function Chat({ eventId, data, reload }: { eventId: string; data: LoungeData | n
             );
           })
         ) : (
-          <p className="pt-16 text-center text-[13.5px] text-muted">Be the first to say hi 👋</p>
+          <p className="pt-16 text-center text-[13.5px] text-muted">No messages in this channel yet. Start with one specific thought.</p>
         )}
       </div>
       <form onSubmit={send} className="flex gap-2 border-t border-line p-3">
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Message everyone at the event…"
+          placeholder={`Message #${LOUNGE_CHANNELS.find((item) => item.id === channel)?.label ?? channel}…`}
+          aria-label={`Message ${channel} channel`}
           maxLength={500}
           className="h-11 flex-1 rounded-xl border border-line bg-canvas px-4 text-[14px] text-ink outline-none placeholder:text-faint focus:border-brand-300 focus:bg-white focus:ring-4 focus:ring-brand-100"
         />

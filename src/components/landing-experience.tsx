@@ -1,8 +1,8 @@
 "use client";
 
-import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
+import { AnimatePresence, motion, useInView, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { ArrowDown, ArrowUpRight, Check, Code2, Lightbulb, MessageCircle, Palette } from "lucide-react";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Starfield } from "@/components/constellation";
 import { PhoneMock } from "@/components/landing-visuals";
 import styles from "./landing-experience.module.css";
@@ -11,9 +11,25 @@ import styles from "./landing-experience.module.css";
 export function LandingHeroScene() {
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
+  const inView = useInView(ref, { once: true, amount: 0.25 });
+  const [ideaStage, setIdeaStage] = useState(0);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const phoneY = useTransform(scrollYProgress, [0, 1], [0, -45]);
   const cardY = useTransform(scrollYProgress, [0, 1], [0, 24]);
+  const story = [
+    { icon: Lightbulb, label: "Start with an idea", text: <>“I have an idea.<br />Where do I start?”</> },
+    { icon: Palette, label: "Find a missing skill", text: <>A designer to<br />build it with.</> },
+    { icon: MessageCircle, label: "Make the first move", text: <>Say hello.<br />Start something.</> },
+  ];
+  const activeStage = reduce ? 0 : ideaStage;
+  const activeStory = story[activeStage];
+  useEffect(() => {
+    if (!inView || reduce) return;
+    // One short sequence on first view, then hold the final card. No background loop.
+    const skill = window.setTimeout(() => setIdeaStage(1), 2600);
+    const conversation = window.setTimeout(() => setIdeaStage(2), 5200);
+    return () => { window.clearTimeout(skill); window.clearTimeout(conversation); };
+  }, [inView, reduce]);
 
   return (
     <div ref={ref} className={styles.scene}>
@@ -29,14 +45,22 @@ export function LandingHeroScene() {
       <div className={styles.sceneHeading}>
         <span className={styles.sceneDot} /> One idea. A world of possibility.
       </div>
-      <motion.div className={styles.phone} style={{ y: reduce ? 0 : phoneY }} initial={reduce ? false : { opacity: 0, rotate: 4 }} animate={{ opacity: 1, rotate: 0 }} transition={{ duration: 0.8, ease: [0.2, 0.7, 0.2, 1] }}>
+      {/* Fades are CSS (.cx-fade) so the scene is never invisible before hydration; motion keeps the tilt/slide and parallax. */}
+      <motion.div className={`${styles.phone} cx-fade`} style={{ y: reduce ? 0 : phoneY }} initial={reduce ? false : { rotate: 4 }} animate={{ rotate: 0 }} transition={{ duration: 0.8, ease: [0.2, 0.7, 0.2, 1] }}>
         <PhoneMock />
       </motion.div>
-      <motion.div className={styles.ideaCard} style={{ y: reduce ? 0 : cardY }} initial={reduce ? false : { opacity: 0, x: -18 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.35, duration: 0.6 }}>
-        <span className={styles.cardIcon}><Lightbulb size={17} /></span>
-        <div><span className={styles.eyebrow}>Start with an idea</span><p>“I want to build<br />something useful.”</p></div>
+      <motion.div aria-hidden="true" className={`${styles.ideaCard} cx-fade`} style={{ y: reduce ? 0 : cardY, animationDelay: "0.35s" }} initial={reduce ? false : { x: -18 }} animate={{ x: 0 }} transition={{ delay: 0.35, duration: 0.6 }}>
+        <span className={styles.cardIcon}><activeStory.icon size={17} /></span>
+        <div className={styles.ideaCopy}>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div key={activeStage} initial={reduce ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={reduce ? undefined : { opacity: 0, y: -6 }} transition={{ duration: 0.25 }}>
+              <span className={styles.eyebrow}>{activeStory.label}</span><p>{activeStory.text}</p>
+            </motion.div>
+          </AnimatePresence>
+          <div className={styles.storyDots}>{story.map((_, i) => <span key={i} className={i === activeStage ? styles.activeDot : undefined} />)}</div>
+        </div>
       </motion.div>
-      <motion.div className={styles.matchCard} initial={reduce ? false : { opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.55, duration: 0.6 }}>
+      <motion.div className={`${styles.matchCard} cx-fade`} style={{ animationDelay: "0.55s" }} initial={reduce ? false : { x: 18 }} animate={{ x: 0 }} transition={{ delay: 0.55, duration: 0.6 }}>
         <div className={styles.matchTitle}><Palette size={15} /> A skill you need <Check size={14} /></div>
         <div className={styles.matchPerson}>
           {/* eslint-disable-next-line @next/next/no-img-element */}

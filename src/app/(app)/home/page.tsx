@@ -14,7 +14,7 @@ import {
   Mic,
   Radar,
   Radio,
-  Search,
+  Sparkles,
   Users,
   Wand2,
   Wrench,
@@ -24,6 +24,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Feed } from "@/components/feed";
+import { EventCover } from "@/components/event-cover";
 import { LoadingCards, MatchCard, type MatchWithState } from "@/components/people";
 import { Reveal } from "@/components/reveal";
 import { Avatar, ButtonLink, cx, ErrorBox, Progress } from "@/components/ui";
@@ -174,7 +175,7 @@ export default function HomePage() {
           { href: "/build", icon: Wand2, title: "Build a team", sub: "Idea → team", tone: "bg-brand-600 text-white" },
           { href: "/map", icon: MapPinned, title: "Nearby", sub: "Who's around", tone: "bg-brand-50 text-brand-700" },
           { href: data?.liveEventId ? `/events/${data.liveEventId}#lounge` : "/events", icon: MessageCircle, title: "Event chat", sub: "Talk to the room", tone: "bg-fuchsia-50 text-fuchsia-700" },
-          { href: "/discover?q=mentor", icon: Search, title: "Find a mentor", sub: "Get unstuck", tone: "bg-emerald-50 text-emerald-700" },
+          { href: "/coach", icon: Sparkles, title: "Ask your coach", sub: "Plan · pitch · people", tone: "bg-emerald-50 text-emerald-700" },
         ].map((a, i) => (
           <Reveal key={a.title} delay={i * 0.06}>
             <Link href={a.href} className="card card-hover group flex h-full items-center gap-3 p-3.5">
@@ -338,19 +339,14 @@ export default function HomePage() {
 }
 
 function EventTile({ rec, people, index }: { rec: EventRecommendation; people: Record<string, PublicProfile>; index: number }) {
-  const art = KIND_ART[rec.event.kind];
   const faces = rec.topPeople.map((t) => people[t.userId]).filter((p): p is PublicProfile => Boolean(p));
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: Math.min(index, 6) * 0.05 }} className="w-64 shrink-0 snap-start">
       <Link href={`/events/${rec.event.id}`} className="card card-hover group block overflow-hidden">
-        <div className="relative h-28 overflow-hidden" style={{ background: art.bg }}>
-          <div className="absolute inset-0 opacity-25" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.55) 1px, transparent 1px)", backgroundSize: "12px 12px" }} />
-          <art.icon className="absolute right-3 bottom-3 size-12 text-white/85 transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6" />
-          <div className="absolute top-3 left-3 rounded-lg bg-white/95 px-2 py-0.5 text-[11px] font-bold text-brand-800">{fmtDate(rec.event.start)}</div>
-          {rec.live ? <div className="absolute top-3 right-3 rounded-full bg-emerald-400 px-2 py-0.5 text-[10.5px] font-bold text-emerald-950">LIVE</div> : null}
-        </div>
+        <EventCover event={rec.event} variant="compact" live={rec.live} />
         <div className="p-3.5">
-          <p className="line-clamp-1 text-[14.5px] font-semibold text-ink">{rec.event.title}</p>
+          <p className="mb-1 text-[9px] font-semibold tracking-wide text-faint uppercase">{rec.event.isSample ? "Sample event" : rec.event.source?.kind === "ics" ? "From public calendar" : "Event"}</p>
+          <p className="line-clamp-2 text-[14.5px] leading-snug font-semibold text-ink">{rec.event.title}</p>
           <p className="mt-0.5 line-clamp-1 text-[12px] text-muted">
             {fmtTime(rec.event.start)} · {rec.event.venue.replace(" (sample)", "")}
           </p>

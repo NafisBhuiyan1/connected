@@ -3,7 +3,7 @@
 @theme {
   --font-sans: var(--font-geist), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
-  --font-serif: var(--font-instrument), "Times New Roman", serif;
+  --font-serif: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
   --color-night: #06060b;
   --color-night-2: #0d0d16;
   --color-bone: #f3f1ea;
@@ -78,6 +78,15 @@ body {
   font-feature-settings: "ss01", "cv11";
 }
 
+/* Legacy display hooks now use the same upright sans hierarchy as the app. */
+.font-serif {
+  font-weight: 600;
+  font-style: normal;
+}
+.font-serif .italic {
+  font-style: normal;
+}
+
 ::selection {
   background: var(--color-brand-200);
 }
@@ -113,6 +122,39 @@ body {
   }
   .scrollbar-none {
     scrollbar-width: none;
+  }
+}
+
+/* Above-the-fold entrances run in CSS, so server-rendered content is never hidden while JS loads. */
+@keyframes cx-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes cx-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.cx-rise {
+  animation: cx-rise-in 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+/* Opacity only: safe on elements whose transform is driven by JS (parallax). */
+.cx-fade {
+  animation: cx-fade-in 0.7s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cx-rise,
+  .cx-fade {
+    animation: none;
   }
 }
 
@@ -613,4 +655,3 @@ body {
     animation: none;
   }
 }
-

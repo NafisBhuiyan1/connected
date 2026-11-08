@@ -337,6 +337,7 @@ async function readSource(input: { url?: string; ics?: string }, importedBy: str
         geo: place.geo,
         isSample: false,
         link: ev.url,
+        imageUrl: ev.imageUrl,
         source: { kind: "ics", feed, uid: ev.uid, importedBy, importedAt: now.toISOString(), approximate: place.approximate || undefined },
       };
       const idx = db.events.findIndex((e) => e.id === id);

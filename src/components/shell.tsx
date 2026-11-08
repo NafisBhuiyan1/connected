@@ -10,10 +10,10 @@ import {
   Home,
   LogOut,
   MapPinned,
-  Network,
   Search,
   Settings2,
   ShieldCheck,
+  Sparkles,
   UserRound,
   Users,
   Wand2,
@@ -32,6 +32,7 @@ const TOP_NAV = [
   { href: "/map", label: "Nearby", icon: MapPinned },
   { href: "/build", label: "Build", icon: Wand2, accent: true },
   { href: "/events", label: "Events", icon: CalendarDays },
+  { href: "/coach", label: "Coach", icon: Sparkles },
   { href: "/connections", label: "Network", icon: Users, badge: true },
 ];
 
@@ -125,6 +126,13 @@ function ShellInner({ children }: { children: React.ReactNode }) {
             <MeMenu />
           </nav>
           <div className="ml-auto flex items-center gap-0.5 md:hidden">
+            <Link
+              href="/coach"
+              aria-label="AI coach"
+              className={cx("focus-ring flex size-9 items-center justify-center rounded-xl transition-colors", isActive(pathname, "/coach") ? "bg-brand-50 text-brand-700" : "text-brand-600 hover:bg-brand-50")}
+            >
+              <Sparkles className="size-[19px]" />
+            </Link>
             <NotificationsBell notes={notes.data} onOpen={markRead} />
             <MeMenu compact />
           </div>
@@ -273,7 +281,6 @@ function MeMenu({ compact }: { compact?: boolean }) {
     { href: "/preferences", label: "Preferences & safety", icon: ShieldCheck },
     { href: "/discover", label: "Discover people", icon: Compass },
     { href: "/missions", label: "Missions", icon: Flag },
-    { href: "/graph", label: "Opportunity graph", icon: Network },
     ...(demoMode ? [{ href: "/demo", label: "Demo control room", icon: Settings2 }] : []),
   ];
   return (

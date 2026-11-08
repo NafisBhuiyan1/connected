@@ -5,6 +5,7 @@
 import type { ConnectedEvent } from "./types";
 import { extractInterests } from "./ontology";
 import { eventSubjects } from "./event-subjects";
+import { publishedImageUrl } from "./event-cover";
 
 export interface IcsEvent {
   uid: string;
@@ -12,6 +13,7 @@ export interface IcsEvent {
   description: string;
   location: string;
   url?: string;
+  imageUrl?: string;
   start: Date;
   end: Date;
   allDay: boolean;
@@ -208,6 +210,9 @@ function toEvent(props: Prop[], calTz?: string): IcsEvent | null {
     description: stripHtml(unescapeText(get("DESCRIPTION")?.value ?? "")).slice(0, 600),
     location: stripHtml(unescapeText(get("LOCATION")?.value ?? "")).replace(/\s+/g, " ").trim().slice(0, 160),
     url: url && /^https?:\/\//i.test(url) ? url : undefined,
+    imageUrl: props.filter((p) => p.name === "IMAGE" || (p.name === "ATTACH" && /^image\/(jpeg|png|webp|gif|avif)$/i.test(p.params.FMTTYPE ?? "")))
+      .filter((p) => p.params.VALUE !== "BINARY" && p.params.ENCODING !== "BASE64")
+      .map((p) => publishedImageUrl(p.value.trim())).find(Boolean),
     start: s.date,
     end,
     allDay: s.allDay,

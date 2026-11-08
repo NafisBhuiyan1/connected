@@ -4,7 +4,9 @@ import { FaceStack, MatchMock, TeamMock } from "@/components/landing-visuals";
 import { LandingConnectionTrail, LandingFeatureReveal, LandingHeroScene, LandingScrollCue } from "@/components/landing-experience";
 import { Reveal } from "@/components/reveal";
 import { Logo } from "@/components/shell";
+import { InstallAppButton } from "@/components/install-app";
 import { currentUserId } from "@/lib/server/session";
+import styles from "@/components/landing-experience.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +23,7 @@ export default async function Landing() {
             <Logo />
           </Link>
           <nav className="flex items-center gap-2">
+            <InstallAppButton label="Download app" desktopOnly className="inline-flex h-10 items-center gap-2 rounded-xl border border-line bg-white px-3.5 text-[13px] font-semibold text-ink transition-colors hover:border-brand-200 hover:bg-brand-50" />
             {signedIn ? null : (
               <Link href="/login" className="rounded-xl px-3.5 py-2 text-[14px] font-medium text-ink-2 hover:bg-canvas">
                 Log in
@@ -37,43 +40,45 @@ export default async function Landing() {
       <section className="relative isolate overflow-hidden">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(70%_60%_at_80%_20%,#ede9fe_0%,transparent_60%),radial-gradient(50%_50%_at_10%_90%,#f5f3ff_0%,transparent_70%)]" />
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 pt-12 pb-8 sm:px-8 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:pt-12">
+          {/* Hero entrances are CSS-only (.cx-rise): visible on first paint even before JavaScript loads. */}
           <div>
-            <Reveal>
+            <div className="cx-rise">
               <p className="inline-flex items-center gap-2 rounded-full border border-brand-100 bg-brand-50 px-3 py-1 text-[12.5px] font-semibold text-brand-700">
                 <span className="size-1.5 rounded-full bg-emerald-500" /> CrownHacks 2026 · UNC Charlotte
               </p>
-            </Reveal>
-            <Reveal delay={0.05}>
-              <h1 className="mt-5 font-serif text-[54px] leading-[0.98] tracking-tight sm:text-[76px]">
+            </div>
+            <div className="cx-rise" style={{ animationDelay: "0.05s" }}>
+              <h1 className={`mt-5 ${styles.heroTitle}`}>
                 Find your people.
                 <br />
-                <span className="italic text-brand-600">Build what&apos;s next.</span>
+                <span className="text-brand-600">Build what&apos;s next.</span>
               </h1>
-            </Reveal>
-            <Reveal delay={0.1}>
+            </div>
+            <div className="cx-rise" style={{ animationDelay: "0.1s" }}>
               <p className="mt-5 max-w-lg text-[18px] leading-relaxed text-ink-2">Tell Connected your idea. It finds the people around you who can build it — and gets you talking.</p>
-            </Reveal>
-            <Reveal delay={0.15}>
+            </div>
+            <div className="cx-rise" style={{ animationDelay: "0.15s" }}>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link href={primaryHref} className="inline-flex h-13 items-center justify-center gap-2 rounded-2xl bg-brand-600 px-7 text-[16px] font-semibold text-white shadow-[0_14px_30px_-12px_rgba(124,58,237,0.7)] transition-colors hover:bg-brand-700">
+                <Link href={primaryHref} className={`${styles.primaryAction} inline-flex h-13 items-center justify-center gap-2 rounded-2xl bg-brand-600 px-7 text-[15px] font-semibold text-white shadow-[0_14px_30px_-12px_rgba(124,58,237,0.7)] hover:bg-brand-700`}>
                   <Wand2 className="size-4" /> {signedIn ? "Open Connected" : "Build my team"}
                 </Link>
+                <InstallAppButton label="Download app" desktopOnly className="inline-flex h-13 items-center justify-center gap-2 rounded-2xl border border-line bg-white px-6 text-[15px] font-semibold text-ink hover:border-brand-200 hover:bg-brand-50" />
                 {signedIn ? null : (
-                  <Link href="/login" className="inline-flex h-13 items-center justify-center rounded-2xl border border-line px-7 text-[16px] font-semibold text-ink hover:border-brand-200 hover:bg-brand-50">
+                  <Link href="/login" className="inline-flex h-13 items-center justify-center rounded-2xl border border-line px-7 text-[15px] font-semibold text-ink hover:border-brand-200 hover:bg-brand-50 md:hidden">
                     Try the demo
                   </Link>
                 )}
               </div>
-            </Reveal>
-            <Reveal delay={0.2}>
+            </div>
+            <div className="cx-rise" style={{ animationDelay: "0.2s" }}>
               <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-                <FaceStack ids={["u_maya", "u_alex", "u_priya", "u_sam", "u_leila", "u_jordan"]} />
+                <div className="shrink-0"><FaceStack ids={["u_maya", "u_alex", "u_priya", "u_sam", "u_leila", "u_jordan"]} size={32} /></div>
                 <p className="min-w-0 text-[13.5px] text-muted">
                   <b className="text-ink">Different skills. Shared ambition.</b><br />Explore fictional profiles in the demo.
                 </p>
               </div>
               <LandingScrollCue />
-            </Reveal>
+            </div>
           </div>
           <LandingHeroScene />
         </div>
@@ -86,8 +91,8 @@ export default async function Landing() {
       <section id="how-it-works" className="scroll-mt-20 border-t border-line bg-canvas">
         <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
           <Reveal>
-            <h2 className="max-w-2xl font-serif text-[42px] leading-[1.05] tracking-tight">
-              From <span className="italic text-brand-600">&ldquo;I have an idea&rdquo;</span> to &ldquo;we&apos;re a team&rdquo;.
+            <h2 className={`max-w-2xl ${styles.sectionTitle}`}>
+              From <span className="text-brand-600">&ldquo;I have an idea&rdquo;</span> to &ldquo;we&apos;re a team&rdquo;.
             </h2>
           </Reveal>
           <div className="mt-12 grid gap-6 md:grid-cols-3">
@@ -130,8 +135,8 @@ export default async function Landing() {
         <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8">
           <Reveal>
             <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-              <h2 className="max-w-md font-serif text-[40px] leading-[1.05]">
-                Nearby, <span className="italic text-brand-200">never tracked.</span>
+              <h2 className={`max-w-md ${styles.sectionTitle}`}>
+                Nearby, <span className="text-brand-200">never tracked.</span>
               </h2>
               <p className="max-w-sm text-[15px] text-white/75">Built-in anti-stalking protection, enforced on our servers and tested.</p>
             </div>
@@ -169,8 +174,8 @@ export default async function Landing() {
       {/* CTA */}
       <section className="mx-auto max-w-6xl px-5 py-20 text-center sm:px-8">
         <Reveal>
-          <h2 className="font-serif text-[46px] leading-none tracking-tight">
-            Your team is <span className="italic text-brand-600">already here.</span>
+          <h2 className={styles.sectionTitle}>
+            Your team is <span className="text-brand-600">already here.</span>
           </h2>
           <Link href={primaryHref} className="mt-8 inline-flex h-13 items-center gap-2 rounded-2xl bg-brand-600 px-8 text-[16px] font-semibold text-white hover:bg-brand-700">
             Get started <ArrowRight className="size-4" />
