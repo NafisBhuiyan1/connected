@@ -4,10 +4,34 @@
 
 > LinkedIn tells you who people are. Connected tells you who to build with.
 
+## Download and run (for teammates)
+
+1. **Get the code:**
+   - Click **Code → Download ZIP** on GitHub and unzip it, or run `git clone https://github.com/NafisBhuiyan1/connected.git`.
+2. **Install [Node.js 20+](https://nodejs.org).** Then, in the project folder:
+
+   ```bash
+   npm install
+   npm run dev
+   ```
+
+3. **Open http://localhost:3000.**
+   - Click **Try the demo**, or log in with `demo@connected.app` / `crownhacks`.
+4. **Optional:**
+   - Put `ANTHROPIC_API_KEY=...` in a `.env.local` file to turn on Claude. Without it, the built-in rules engine runs, and the app labels which one answered.
+   - For production, set a long random `SESSION_SECRET`.
+   - Never commit `.env.local` or the `.data/` folder.
+
 ## Try it
 
 - **Demo login:** `demo@connected.app` / `crownhacks` (fictional "Riley Park"), or create your own account at `/onboarding`.
 - **Venue check-in code** (when GPS is unavailable): `CROWN26`.
+- **AI coach** (`/coach`, the ✨ button in the header):
+  - Plans your next hour, shrinks an idea to a first version, sharpens a pitch, and suggests complementary people and events.
+  - Every suggestion links to their profile, or hands off to the Team Builder.
+  - It never messages anyone for you, and each reply says whether Claude or the rules engine wrote it.
+- **Installable app:** "Download app" on the landing page installs Connected as a home-screen / desktop app (manifest + service worker, offline page).
+- **Event lounges:** have chat channels and a photo wall, and update live.
 
 ## Nearby map + anti-stalking (`/map`, `/preferences`)
 
