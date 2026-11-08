@@ -64,11 +64,15 @@ export function InstallAppButton({ className = "", label = "Download app", deskt
     } catch { setMessage("Open your browser menu and choose Install app to continue."); }
     finally { setBusy(false); }
   }
+  const button = (
+    <button ref={trigger} type="button" className={`inline-flex ${className}`} onClick={() => setOpen(true)}>
+      <Download className="size-4 shrink-0" /> {isInstalled ? "App installed" : label}
+    </button>
+  );
   return (
     <>
-      <button ref={trigger} type="button" className={`${desktopOnly ? "hidden sm:inline-flex" : "inline-flex"} ${className}`} onClick={() => setOpen(true)}>
-        <Download className="size-4 shrink-0" /> {isInstalled ? "App installed" : label}
-      </button>
+      {/* desktopOnly hides via a wrapper: callers pass their own display class (inline-flex), which would override `hidden`. */}
+      {desktopOnly ? <span className="hidden sm:contents">{button}</span> : button}
       {open ? <dialog ref={dialog} onCancel={close} onClose={() => setOpen(false)} onClick={(event) => { if (event.target === event.currentTarget) close(); }} aria-labelledby="install-connected-title" className="install-connected-dialog fixed inset-0 m-auto w-[calc(100%-32px)] max-w-md overflow-hidden rounded-3xl border border-line bg-white p-0 text-ink shadow-2xl">
         <div className="p-6">
           <div className="flex items-start justify-between gap-3">

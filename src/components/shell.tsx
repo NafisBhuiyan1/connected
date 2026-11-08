@@ -24,6 +24,7 @@ import { useEffect, useRef, useState } from "react";
 import { api, timeAgo, useApi } from "@/lib/client";
 import { useLive } from "@/lib/live";
 import type { Notification } from "@/lib/types";
+import { InstallAppButton } from "./install-app";
 import { SessionProvider, useSession } from "./session";
 import { Avatar, Badge, Button, cx } from "./ui";
 
@@ -319,6 +320,8 @@ function MeMenu({ compact }: { compact?: boolean }) {
                   <it.icon className="size-4 text-faint" /> {it.label}
                 </Link>
               ))}
+              {/* The landing's install button is desktop-only; this is the phone (and desktop) entry point. */}
+              <InstallAppButton label="Install the app" className="w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13.5px] text-ink-2 hover:bg-canvas hover:text-ink [&>svg]:text-faint" />
               <button
                 onClick={async () => {
                   await api("/api/session", { method: "DELETE" });

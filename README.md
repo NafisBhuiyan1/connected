@@ -19,7 +19,13 @@
    - Click **Try the demo**, or log in with `demo@connected.app` / `crownhacks`.
 4. **Optional:**
    - Put `ANTHROPIC_API_KEY=...` in a `.env.local` file to turn on Claude. Without it, the built-in rules engine runs, and the app labels which one answered.
-   - For production, set a long random `SESSION_SECRET`.
+   - For production (`npm run build` then `npm start`), set a long random `SESSION_SECRET` in `.env.local`. Without it, sign-in is refused on purpose (HTTP 503). Make one with:
+
+     ```bash
+     node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+     ```
+
+   - Session cookies are `Secure` in production. Phones therefore need HTTPS (a tunnel or a host); plain `http://<LAN-IP>` only works with `npm run dev`.
    - Never commit `.env.local` or the `.data/` folder.
 
 ## Try it
