@@ -12,7 +12,8 @@ export const dynamic = "force-dynamic";
 
 export default async function Landing() {
   const signedIn = Boolean(await currentUserId());
-  const primaryHref = signedIn ? "/home" : "/onboarding";
+  // The app behind this front page is Connected. (the team's app, web build at /app).
+  const primaryHref = "/app";
 
   return (
     <div className="min-h-dvh bg-white text-ink">
@@ -25,7 +26,7 @@ export default async function Landing() {
           <nav className="flex items-center gap-2">
             <InstallAppButton label="Download app" desktopOnly className="inline-flex h-10 items-center gap-2 rounded-xl border border-line bg-white px-3.5 text-[13px] font-semibold text-ink transition-colors hover:border-brand-200 hover:bg-brand-50" />
             {signedIn ? null : (
-              <Link href="/login" className="rounded-xl px-3.5 py-2 text-[14px] font-medium text-ink-2 hover:bg-canvas">
+              <Link href="/app" className="rounded-xl px-3.5 py-2 text-[14px] font-medium text-ink-2 hover:bg-canvas">
                 Log in
               </Link>
             )}
@@ -64,7 +65,7 @@ export default async function Landing() {
                 </Link>
                 <InstallAppButton label="Download app" desktopOnly className="inline-flex h-13 items-center justify-center gap-2 rounded-2xl border border-line bg-white px-6 text-[15px] font-semibold text-ink hover:border-brand-200 hover:bg-brand-50" />
                 {signedIn ? null : (
-                  <Link href="/login" className="inline-flex h-13 items-center justify-center rounded-2xl border border-line px-7 text-[15px] font-semibold text-ink hover:border-brand-200 hover:bg-brand-50 md:hidden">
+                  <Link href="/app" className="inline-flex h-13 items-center justify-center rounded-2xl border border-line px-7 text-[15px] font-semibold text-ink hover:border-brand-200 hover:bg-brand-50 md:hidden">
                     Try the demo
                   </Link>
                 )}
