@@ -13,7 +13,6 @@ let es: EventSource | null = null;
 let currentKey = "";
 let timer: ReturnType<typeof setTimeout> | null = null;
 let connected = false;
-let hadError = false;
 const statusSubs = new Set<() => void>();
 
 function setConnected(v: boolean) {
@@ -23,7 +22,12 @@ function setConnected(v: boolean) {
 }
 
 function fireAll() {
-  for (const [topic, fns] of listeners) fns.forEach((fn) => fn(topic));
+  const notified = new Set<Fn>();
+  for (const [topic, fns] of listeners) for (const fn of fns) {
+    if (notified.has(fn)) continue;
+    notified.add(fn);
+    try { fn(topic); } catch { /* Keep independent consumers running. */ }
+  }
 }
 
 function reconnect() {
@@ -39,22 +43,63 @@ function reconnect() {
   const source = new EventSource(`/api/stream?topics=${encodeURIComponent(key)}`);
   es = source;
   source.addEventListener("ready", () => {
+    if (es !== source) return;
     setConnected(true);
-    // After a drop we may have missed pings — refresh everything once.
-    if (hadError) fireAll();
-    hadError = false;
+    // Every establishment (including topic changes) can have missed writes.
+    fireAll();
   });
   source.onmessage = (e) => {
+    if (es !== source) return;
     try {
       const { topic } = JSON.parse(e.data) as { topic: string };
-      listeners.get(topic)?.forEach((fn) => fn(topic));
+      listeners.get(topic)?.forEach((fn) => { try { fn(topic); } catch { /* independent consumer */ } });
     } catch {
       // ignore malformed
     }
   };
   source.onerror = () => {
-    hadError = true;
+    if (es !== source) return;
     setConnected(false); // the browser retries on its own (server sends retry: 3000)
+  };
+}
+
+/** Shared registration used by hooks; exported for transport lifecycle tests. */
+export function subscribeLiveTopics(topics: string[], fn: Fn): () => void {
+  const list = [...new Set(topics.filter((t) => /^(user|lounge|thread):[A-Za-z0-9_-]{1,80}$/.test(t)))];
+  for (const t of list) {
+    if (!listeners.has(t)) listeners.set(t, new Set());
+    listeners.get(t)!.add(fn);
+  }
+  schedule();
+  return () => {
+    for (const t of list) {
+      const set = listeners.get(t);
+      set?.delete(fn);
+      if (set && !set.size) listeners.delete(t);
+    }
+    schedule();
+  };
+}
+
+export function coalesceLiveChanges(callback: () => void) {
+  let last = -Infinity;
+  let trailing: ReturnType<typeof setTimeout> | null = null;
+  return {
+    notify() {
+      const elapsed = Date.now() - last;
+      if (elapsed >= 150) {
+        if (trailing) clearTimeout(trailing);
+        trailing = null;
+        last = Date.now();
+        callback();
+      }
+      else if (!trailing) trailing = setTimeout(() => {
+        trailing = null;
+        last = Date.now();
+        callback();
+      }, 150 - elapsed);
+    },
+    dispose() { if (trailing) clearTimeout(trailing); trailing = null; },
   };
 }
 
@@ -66,30 +111,14 @@ function schedule() {
 export function useLive(topics: (string | null | undefined | false)[], onChange: () => void) {
   const cb = useRef(onChange);
   cb.current = onChange;
-  const key = topics.filter(Boolean).join(",");
+  const key = [...new Set(topics.filter(Boolean))].sort().join(",");
   useEffect(() => {
     if (!key) return;
-    const list = key.split(",");
-    let last = 0;
-    const fn: Fn = () => {
-      // Coalesce bursts (e.g. message + notification) into one refetch.
-      const now = Date.now();
-      if (now - last < 150) return;
-      last = now;
-      cb.current();
-    };
-    for (const t of list) {
-      if (!listeners.has(t)) listeners.set(t, new Set());
-      listeners.get(t)!.add(fn);
-    }
-    schedule();
+    const changes = coalesceLiveChanges(() => cb.current());
+    const off = subscribeLiveTopics(key.split(","), changes.notify);
     return () => {
-      for (const t of list) {
-        const set = listeners.get(t);
-        set?.delete(fn);
-        if (set && !set.size) listeners.delete(t);
-      }
-      schedule();
+      changes.dispose();
+      off();
     };
   }, [key]);
 }

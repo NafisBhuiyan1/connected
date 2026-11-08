@@ -11,6 +11,7 @@ import { Badge, Card, cx, Empty, ErrorBox, PageHeader, Progress, Skeleton } from
 import { fmtDateTime, useApi } from "@/lib/client";
 import type { EventRecommendation } from "@/lib/engine/events";
 import type { ConnectedEvent, PublicProfile } from "@/lib/types";
+import { EVENT_SUBJECTS, eventSubjects } from "@/lib/event-subjects";
 
 interface EventsResponse {
   events: EventRecommendation[];
@@ -48,9 +49,10 @@ export default function EventsPage() {
   const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
   const [kind, setKind] = useState<ConnectedEvent["kind"] | "all">("all");
   const [realOnly, setRealOnly] = useState(false);
-  const all = (data?.events ?? []).filter((e) => !realOnly || !e.event.isSample);
+  const [subject, setSubject] = useState("all");
+  const all = (data?.events ?? []).filter((e) => (!realOnly || !e.event.isSample) && (subject === "all" || eventSubjects(e.event).includes(subject)));
   const synced = (data?.feeds ?? []).filter((f) => f.syncedAt);
-  const realCount = (data?.events ?? []).filter((e) => !e.event.isSample).length;
+  const realCount = (data?.events ?? []).filter((e) => !e.event.isSample && (subject === "all" || eventSubjects(e.event).includes(subject))).length;
   const counts = all.reduce<Partial<Record<ConnectedEvent["kind"], number>>>((acc, e) => ({ ...acc, [e.event.kind]: (acc[e.event.kind] ?? 0) + 1 }), {});
   const events = kind === "all" ? all : all.filter((e) => e.event.kind === kind);
   const dist = (e: EventRecommendation) => (pos && e.event.geo ? haversineM(pos, e.event.geo) : undefined);
@@ -72,6 +74,17 @@ export default function EventsPage() {
         }
       />
       {pos ? <p className="-mt-3 mb-4 text-[12px] text-muted">Distances are computed on this device — your location isn&apos;t sent anywhere.</p> : null}
+
+      <div className="mb-5 flex flex-wrap items-center gap-3">
+        <label className="flex min-w-0 flex-1 items-center gap-2 text-[13px] font-medium text-ink-2">
+          <GraduationCap className="size-4 shrink-0 text-brand-600" />
+          <select aria-label="Explore events by major or interest" value={subject} onChange={(e) => setSubject(e.target.value)} className="h-10 min-w-0 flex-1 rounded-xl border border-line bg-white px-3 text-ink sm:max-w-xs">
+            <option value="all">All majors & interests</option>
+            {EVENT_SUBJECTS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+          </select>
+        </label>
+        {subject !== "all" ? <button className="text-[13px] font-medium text-brand-700" onClick={() => { setSubject("all"); setKind("all"); }}>Clear subject</button> : null}
+      </div>
 
       {synced.length ? (
         <div className="-mt-2 mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-muted">
@@ -132,7 +145,7 @@ export default function EventsPage() {
       ) : null}
 
       {data && !events.length ? (
-        <Empty icon={<CalendarDays className="size-5" />} title="No upcoming events" body="When events are added, Connected ranks them by how many people there fit your goals." />
+        <Empty icon={<CalendarDays className="size-5" />} title="No events in this view" body="Try another subject or event type, or turn off Real only. Calendar sources may not list every major yet." />
       ) : null}
 
       {featured ? <FeaturedEvent rec={featured} people={data!.people} distance={dist(featured)} /> : null}

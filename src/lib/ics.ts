@@ -4,6 +4,7 @@
 
 import type { ConnectedEvent } from "./types";
 import { extractInterests } from "./ontology";
+import { eventSubjects } from "./event-subjects";
 
 export interface IcsEvent {
   uid: string;
@@ -17,6 +18,9 @@ export interface IcsEvent {
   geo?: { lat: number; lng: number };
   cancelled: boolean;
   rrule?: string;
+  /** Preserve the source wall-clock zone when advancing simple recurrences. */
+  timezone?: string;
+  excludedStarts?: number[];
   categories: string[];
   /** Organizer / hosting club (X-HOSTS or ORGANIZER CN). */
   hosts?: string;
@@ -113,6 +117,8 @@ export function parseIcsDate(p: Prop, calTz?: string): { date: Date; allDay: boo
   const m = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?$/.exec(v);
   if (!m) return null;
   const [, y, mo, d, h, mi, s, z] = m;
+  const check = new Date(Date.UTC(+y, +mo - 1, +d));
+  if (check.getUTCFullYear() !== +y || check.getUTCMonth() !== +mo - 1 || check.getUTCDate() !== +d || +(h ?? 0) > 23 || +(mi ?? 0) > 59 || +(s ?? 0) > 59) return null;
   if (h === undefined || p.params.VALUE === "DATE") {
     // All-day: treat as 9 AM local so it sorts sensibly and shows on the right day.
     return { date: zonedToUtc(+y, +mo, +d, 9, 0, 0, validTz(calTz)), allDay: true };
@@ -208,6 +214,11 @@ function toEvent(props: Prop[], calTz?: string): IcsEvent | null {
     geo,
     cancelled: (get("STATUS")?.value ?? "").toUpperCase() === "CANCELLED",
     rrule: get("RRULE")?.value,
+    timezone: /Z$/.test(dtstart.value) ? "UTC" : validTz(dtstart.params.TZID ?? calTz),
+    excludedStarts: props.filter((p) => p.name === "EXDATE").flatMap((p) => p.value.split(",").flatMap((value) => {
+      const date = parseIcsDate({ ...p, value }, calTz)?.date;
+      return date ? [date.getTime()] : [];
+    })),
     categories,
     hosts,
   };
@@ -215,28 +226,41 @@ function toEvent(props: Prop[], calTz?: string): IcsEvent | null {
 
 /** If the event recurs, move it to its next occurrence that hasn't ended yet. Returns null if the series is over. */
 export function nextOccurrence(ev: IcsEvent, now: Date): IcsEvent | null {
-  if (ev.end >= now || !ev.rrule) return ev.end >= now ? ev : null;
+  if (ev.cancelled) return null;
+  const excluded = new Set(ev.excludedStarts ?? []);
+  if (ev.end > now && !excluded.has(ev.start.getTime())) return ev;
+  if (!ev.rrule) return null;
   const r = Object.fromEntries(ev.rrule.split(";").map((kv) => kv.split("=") as [string, string]).map(([k, v]) => [k.toUpperCase(), v]));
-  const step = { DAILY: 86_400_000, WEEKLY: 7 * 86_400_000 }[r.FREQ as "DAILY" | "WEEKLY"];
-  const interval = Math.max(1, Number(r.INTERVAL ?? 1) || 1);
+  // Unsupported BYxxx/RDATE rules must not turn into invented schedules.
+  if (Object.keys(r).some((name) => !["FREQ", "INTERVAL", "COUNT", "UNTIL", "WKST"].includes(name))) return null;
+  if (!["DAILY", "WEEKLY", "MONTHLY"].includes(r.FREQ)) return null;
+  const interval = Number(r.INTERVAL ?? 1);
   const count = r.COUNT ? Number(r.COUNT) : Infinity;
-  const until = r.UNTIL ? parseIcsDate({ name: "UNTIL", params: {}, value: r.UNTIL })?.date : undefined;
+  if (!Number.isSafeInteger(interval) || interval < 1 || (count !== Infinity && (!Number.isSafeInteger(count) || count < 1))) return null;
+  const tz = validTz(ev.timezone ?? "UTC");
+  const until = r.UNTIL ? parseIcsDate({ name: "UNTIL", params: {}, value: r.UNTIL }, tz)?.date : undefined;
+  if (r.UNTIL && !until) return null;
   const len = ev.end.getTime() - ev.start.getTime();
-  if (step) {
-    const stride = step * interval;
-    const k = Math.ceil((now.getTime() - ev.end.getTime()) / stride);
-    if (k >= count) return null;
-    const start = new Date(ev.start.getTime() + k * stride);
-    if (until && start > until) return null;
-    return { ...ev, start, end: new Date(start.getTime() + len) };
-  }
-  if (r.FREQ === "MONTHLY") {
-    for (let k = 1; k < Math.min(count, 120); k++) {
-      const start = new Date(ev.start);
-      start.setUTCMonth(start.getUTCMonth() + k * interval);
-      if (until && start > until) return null;
-      if (start.getTime() + len >= now.getTime()) return { ...ev, start, end: new Date(start.getTime() + len) };
-    }
+  const fmt = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const parts = (date: Date) => Object.fromEntries(fmt.formatToParts(date).map((p) => [p.type, p.value]));
+  const wall = parts(ev.start);
+  const base = Date.UTC(+wall.year, +wall.month - 1, +wall.day, +wall.hour, +wall.minute, +wall.second);
+  const stride = (r.FREQ === "WEEKLY" ? 7 : 1) * interval * 86_400_000;
+  const first = count === Infinity && r.FREQ !== "MONTHLY" ? Math.max(0, Math.floor((now.getTime() - ev.end.getTime()) / stride) - 2) : 0;
+  let occurrences = 0;
+  for (let k = first; k < first + 10_000; k++) {
+    const candidate = new Date(base);
+    if (r.FREQ === "MONTHLY") {
+      candidate.setUTCMonth(candidate.getUTCMonth() + k * interval);
+      if (candidate.getUTCDate() !== +wall.day) continue; // Feb 31 must not become March 3.
+    } else candidate.setUTCDate(candidate.getUTCDate() + k * (r.FREQ === "WEEKLY" ? 7 : 1) * interval);
+    if (!Number.isFinite(candidate.getTime())) return null;
+    const start = zonedToUtc(candidate.getUTCFullYear(), candidate.getUTCMonth() + 1, candidate.getUTCDate(), candidate.getUTCHours(), candidate.getUTCMinutes(), candidate.getUTCSeconds(), tz);
+    const local = parts(start);
+    if (+local.hour !== candidate.getUTCHours() || +local.day !== candidate.getUTCDate()) continue; // Nonexistent DST wall time.
+    if (++occurrences > count || (until && start > until)) return null;
+    if (excluded.has(start.getTime())) continue;
+    if (start.getTime() + len > now.getTime()) return { ...ev, start, end: new Date(start.getTime() + len) };
   }
   return null;
 }
@@ -275,10 +299,11 @@ const STAFF = /\b(faculty (and|&) staff|for faculty|faculty development|instruct
  * plus topical overlap with the ontology, minus calendar noise. Negative = not a networking event.
  */
 export function relevance(ev: Pick<IcsEvent, "title" | "description" | "categories">): number {
-  if (NOISE.test(ev.title) || ev.categories.some((c) => NOISE_CATEGORIES.test(c))) return -1;
   const kind = matchKind(ev.title, ev.description, ev.categories);
+  const professionalFormat = kind && ["career-fair", "conference", "seminar", "pitch"].includes(kind);
+  if (!professionalFormat && (NOISE.test(ev.title) || ev.categories.some((c) => NOISE_CATEGORIES.test(c)))) return -1;
   const kindPts = !kind ? 0 : kind === "meetup" ? 1 : kind === "seminar" ? 1.5 : 2.5;
-  const topics = extractInterests(`${ev.title}\n${ev.categories.join(" ")}\n${ev.description}`).length;
+  const topics = Math.max(extractInterests(`${ev.title}\n${ev.categories.join(" ")}\n${ev.description}`).length, eventSubjects({ ...ev, tags: ev.categories }).length);
   return kindPts + Math.min(3, topics) - (STAFF.test(ev.title) ? 2 : 0);
 }
 
@@ -322,10 +347,11 @@ const KIND_DEFAULT_TAGS: Record<ConnectedEvent["kind"], string[]> = {
   conference: ["research"],
   workshop: ["dev-tools"],
   seminar: ["research"],
-  meetup: ["startups"],
+  meetup: [],
 };
 
 export function tagEvent(title: string, description: string, kind: ConnectedEvent["kind"], categories: string[] = []): string[] {
   const tags = extractInterests(`${title}\n${categories.join(" ")}\n${description}`).slice(0, 6);
-  return tags.length ? tags : KIND_DEFAULT_TAGS[kind];
+  // Generic workshops/talks do not imply a tech/startup discipline.
+  return tags.length ? tags : kind === "career-fair" ? KIND_DEFAULT_TAGS[kind] : [];
 }

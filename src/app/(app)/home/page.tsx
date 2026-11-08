@@ -102,7 +102,7 @@ export default function HomePage() {
         <div className="pointer-events-none absolute -top-24 -right-16 size-80 rounded-full bg-brand-400/35 blur-3xl" />
         <div className="pointer-events-none absolute inset-0 opacity-[0.08]" style={{ backgroundImage: "radial-gradient(white 1px, transparent 1px)", backgroundSize: "18px 18px" }} />
         <div className="relative grid items-center gap-6 lg:grid-cols-[1.25fr_1fr]">
-          <div>
+          <div className="min-w-0">
             <p className="text-[13px] font-medium text-white/70">
               {greeting()}
               {me ? `, ${firstName(me.name)}` : ""} 👋
@@ -111,13 +111,14 @@ export default function HomePage() {
               Who will you build
               <br className="sm:hidden" /> with <span className="font-serif text-[1.12em] font-normal italic text-brand-100">today</span>?
             </h1>
-            <form onSubmit={submitIdea} className="mt-5 flex items-center gap-2 rounded-2xl bg-white p-1.5 pl-4 shadow-[0_12px_30px_-12px_rgba(0,0,0,0.35)]">
+            <form onSubmit={submitIdea} className="mt-5 flex w-full min-w-0 items-center gap-2 rounded-2xl bg-white p-1.5 pl-4 shadow-[0_12px_30px_-12px_rgba(0,0,0,0.35)]">
               <Wand2 className="size-4 shrink-0 text-brand-500" />
               <input
+                aria-label="Describe your project idea"
                 value={idea}
                 onChange={(e) => setIdea(e.target.value)}
                 placeholder="Your idea → your team"
-                className="h-10 min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-faint"
+                className="h-10 w-0 min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-faint"
               />
               <button className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-brand-600 px-4 text-[13.5px] font-semibold text-white transition-colors hover:bg-brand-700">
                 Build <ArrowRight className="size-3.5" />

@@ -462,7 +462,9 @@ export function createTeam(
 
 function teamAccess(db: Database, me: Profile, t: Team) {
   const member = t.members.find((m) => m.userId === me.id);
-  if (!member && t.ownerId !== me.id) throw new ApiError(403, "Only invited members can open this team.");
+  if (t.ownerId !== me.id && (!member || member.status === "declined" || blocked(db, me.id, t.ownerId))) {
+    throw new ApiError(403, "Only active invited members can open this team.");
+  }
   return member;
 }
 
@@ -548,15 +550,14 @@ export function postMessage(me: Profile, threadId: string, body: string) {
     const team = db.teams.find((t) => t.id === threadId);
     const req = db.requests.find((r) => r.id === threadId);
     if (team) {
-      const m = team.members.find((x) => x.userId === me.id);
-      if (!m || m.status === "declined") throw new ApiError(403, "Not a member of this team.");
+      teamAccess(db, me, team);
       for (const other of team.members) {
-        if (other.userId !== me.id && other.status !== "declined") {
+        if (other.userId !== me.id && other.status !== "declined" && !blocked(db, me.id, other.userId)) {
           notify(db, { userId: other.userId, kind: "message", title: `${me.name} in ${team.title}`, body: text.slice(0, 120), href: `/teams/${team.id}` });
         }
       }
     } else if (req) {
-      if (req.status !== "accepted" || (req.fromId !== me.id && req.toId !== me.id)) throw new ApiError(403, "Not part of this conversation.");
+      if (req.status !== "accepted" || (req.fromId !== me.id && req.toId !== me.id) || blocked(db, req.fromId, req.toId)) throw new ApiError(403, "Not part of this conversation.");
     } else throw new ApiError(404, "Thread not found");
     const msg = { id: newId("m"), threadId, fromId: me.id, body: text.slice(0, 2000), createdAt: nowIso() };
     db.messages.push(msg);
@@ -567,8 +568,12 @@ export function postMessage(me: Profile, threadId: string, body: string) {
 
 export function threadMessages(me: Profile, threadId: string) {
   const db = getDb();
-  const req = db.requests.find((r) => r.id === threadId);
-  if (!req || (req.fromId !== me.id && req.toId !== me.id)) throw new ApiError(404, "Thread not found");
+  const team = db.teams.find((t) => t.id === threadId);
+  if (team) teamAccess(db, me, team);
+  else {
+    const req = db.requests.find((r) => r.id === threadId);
+    if (!req || req.status !== "accepted" || (req.fromId !== me.id && req.toId !== me.id) || blocked(db, req.fromId, req.toId)) throw new ApiError(404, "Thread not found");
+  }
   return db.messages.filter((m) => m.threadId === threadId).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
@@ -1336,12 +1341,12 @@ export function canSubscribe(me: Profile, topic: string): boolean {
   const id = topic.slice(i + 1);
   const db = getDb();
   if (kind === "user") return id === me.id;
-  if (kind === "lounge") return db.memberships.some((m) => m.userId === me.id && m.eventId === id);
+  if (kind === "lounge") return db.events.some((e) => e.id === id) && db.memberships.some((m) => m.userId === me.id && m.eventId === id);
   if (kind === "thread") {
     const t = db.teams.find((x) => x.id === id);
-    if (t) return t.ownerId === me.id || t.members.some((m) => m.userId === me.id);
+    if (t) return t.ownerId === me.id || (!blocked(db, me.id, t.ownerId) && t.members.some((m) => m.userId === me.id && m.status !== "declined"));
     const r = db.requests.find((x) => x.id === id);
-    return Boolean(r && (r.fromId === me.id || r.toId === me.id));
+    return Boolean(r && r.status === "accepted" && (r.fromId === me.id || r.toId === me.id) && !blocked(db, r.fromId, r.toId));
   }
   return false;
 }

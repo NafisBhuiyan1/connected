@@ -1,6 +1,7 @@
 import { ArrowRight, EyeOff, Ghost, MapPinned, ShieldCheck, Shuffle, Timer, Users, Wand2 } from "lucide-react";
 import Link from "next/link";
-import { FaceStack, MatchMock, PhoneMock, TeamMock } from "@/components/landing-visuals";
+import { FaceStack, MatchMock, TeamMock } from "@/components/landing-visuals";
+import { LandingConnectionTrail, LandingFeatureReveal, LandingHeroScene, LandingScrollCue } from "@/components/landing-experience";
 import { Reveal } from "@/components/reveal";
 import { Logo } from "@/components/shell";
 import { currentUserId } from "@/lib/server/session";
@@ -33,9 +34,9 @@ export default async function Landing() {
       </header>
 
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(70%_60%_at_80%_20%,#ede9fe_0%,transparent_60%),radial-gradient(50%_50%_at_10%_90%,#f5f3ff_0%,transparent_70%)]" />
-        <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 pt-12 pb-20 sm:px-8 lg:grid-cols-[1.15fr_1fr] lg:pt-20">
+      <section className="relative isolate overflow-hidden">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(70%_60%_at_80%_20%,#ede9fe_0%,transparent_60%),radial-gradient(50%_50%_at_10%_90%,#f5f3ff_0%,transparent_70%)]" />
+        <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 pt-12 pb-8 sm:px-8 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:pt-12">
           <div>
             <Reveal>
               <p className="inline-flex items-center gap-2 rounded-full border border-brand-100 bg-brand-50 px-3 py-1 text-[12.5px] font-semibold text-brand-700">
@@ -65,22 +66,24 @@ export default async function Landing() {
               </div>
             </Reveal>
             <Reveal delay={0.2}>
-              <div className="mt-8 flex items-center gap-3">
+              <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
                 <FaceStack ids={["u_maya", "u_alex", "u_priya", "u_sam", "u_leila", "u_jordan"]} />
-                <p className="text-[13.5px] text-muted">
-                  <b className="text-ink">36 builders</b> in the CrownHacks space
+                <p className="min-w-0 text-[13.5px] text-muted">
+                  <b className="text-ink">Different skills. Shared ambition.</b><br />Explore fictional profiles in the demo.
                 </p>
               </div>
+              <LandingScrollCue />
             </Reveal>
           </div>
-          <Reveal delay={0.1} y={30}>
-            <PhoneMock />
-          </Reveal>
+          <LandingHeroScene />
+        </div>
+        <div className="mx-auto max-w-6xl px-5 sm:px-8">
+          <LandingConnectionTrail />
         </div>
       </section>
 
       {/* Features */}
-      <section className="border-t border-line bg-canvas">
+      <section id="how-it-works" className="scroll-mt-20 border-t border-line bg-canvas">
         <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
           <Reveal>
             <h2 className="max-w-2xl font-serif text-[42px] leading-[1.05] tracking-tight">
@@ -109,14 +112,14 @@ export default async function Landing() {
                 ),
               },
             ].map((f, i) => (
-              <Reveal key={f.n} delay={i * 0.08}>
+              <LandingFeatureReveal key={f.n} index={i}>
                 <div className="flex h-full flex-col">
                   <div className="h-56">{f.mock}</div>
                   <p className="mt-6 text-[12px] font-bold tracking-widest text-brand-500">{f.n}</p>
                   <p className="mt-1 text-[22px] font-semibold tracking-tight">{f.t}</p>
                   <p className="mt-1 text-[15px] text-muted">{f.b}</p>
                 </div>
-              </Reveal>
+              </LandingFeatureReveal>
             ))}
           </div>
         </div>

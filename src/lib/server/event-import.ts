@@ -21,14 +21,14 @@ const recent = new Map<string, number[]>();
 
 // ---------- Safe fetch (SSRF guard) ----------
 
-function isPrivateIp(ip: string): boolean {
-  if (net.isIPv4(ip)) {
-    const [a, b] = ip.split(".").map(Number);
-    return a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127) || a >= 224;
-  }
-  const v = ip.toLowerCase();
-  if (v.startsWith("::ffff:")) return isPrivateIp(v.slice(7));
-  return v === "::1" || v === "::" || v.startsWith("fc") || v.startsWith("fd") || v.startsWith("fe80");
+const blockedIps = new net.BlockList();
+for (const [network, prefix] of [["0.0.0.0", 8], ["10.0.0.0", 8], ["100.64.0.0", 10], ["127.0.0.0", 8], ["169.254.0.0", 16], ["172.16.0.0", 12], ["192.168.0.0", 16], ["192.0.0.0", 24], ["192.0.2.0", 24], ["198.18.0.0", 15], ["198.51.100.0", 24], ["203.0.113.0", 24], ["224.0.0.0", 4], ["240.0.0.0", 4]] as const) blockedIps.addSubnet(network, prefix, "ipv4");
+for (const [network, prefix] of [["::", 128], ["::1", 128], ["fc00::", 7], ["fe80::", 10], ["ff00::", 8], ["2001:db8::", 32]] as const) blockedIps.addSubnet(network, prefix, "ipv6");
+
+export function isPrivateIp(ip: string): boolean {
+  const family = net.isIP(ip);
+  // BlockList recognizes IPv4-mapped IPv6 in both dotted and hexadecimal forms.
+  return !family || blockedIps.check(ip, family === 4 ? "ipv4" : "ipv6");
 }
 
 async function assertPublicUrl(raw: string): Promise<URL> {
@@ -51,17 +51,20 @@ async function assertPublicUrl(raw: string): Promise<URL> {
 
 async function fetchCalendar(raw: string): Promise<string> {
   let url = await assertPublicUrl(raw);
+  const signal = AbortSignal.timeout(25_000);
   for (let hop = 0; hop < 4; hop++) {
     const res = await fetch(url, {
       redirect: "manual",
+      cache: "no-store",
       headers: { Accept: "text/calendar, text/plain;q=0.8, */*;q=0.1", "User-Agent": "Connected-CrownHacks/1.0 (calendar import)" },
       // Campus calendars are ~1 MB and sometimes slow; the timeout covers the whole download.
-      signal: AbortSignal.timeout(25_000),
+      signal,
     }).catch((e: Error) => {
       throw new ApiError(502, `That calendar didn't respond (${e.name === "TimeoutError" ? "timed out" : "network error"}). Try again.`);
     });
     if (res.status >= 300 && res.status < 400) {
       const loc = res.headers.get("location");
+      await res.body?.cancel().catch(() => {});
       if (!loc) break;
       url = await assertPublicUrl(new URL(loc, url).toString());
       continue;
@@ -196,7 +199,7 @@ export async function importCalendar(me: Profile, input: { url?: string; ics?: s
 
 const SYNC_EVERY_MS = 6 * 3_600_000;
 const RETRY_MS = 30 * 60_000;
-const gs = globalThis as unknown as { __feedSync?: Promise<void> | null };
+const gs = globalThis as unknown as { __feedSync?: Promise<void> | null; __calendarImports?: Map<string, Promise<ImportSummary>> };
 
 function recordFeed(url: string | undefined, result: ImportSummary | Error, now: Date) {
   if (!url) return;
@@ -241,8 +244,21 @@ export function kickFeedSync(now = new Date()): void {
 }
 
 async function importFromSource(input: { url?: string; ics?: string }, importedBy: string, now: Date): Promise<ImportSummary> {
+  if (!input.url || input.ics) return readSource(input, importedBy, now);
+  let key: string;
+  try { key = new URL(input.url.trim().replace(/^webcals?:\/\//i, "https://")).toString(); }
+  catch { throw new ApiError(400, "That isn't a valid link."); }
+  const pending = gs.__calendarImports ??= new Map();
+  const existing = pending.get(key);
+  if (existing) return existing;
+  const task = readSource({ url: key }, importedBy, now).finally(() => pending.delete(key));
+  pending.set(key, task);
+  return task;
+}
+
+async function readSource(input: { url?: string; ics?: string }, importedBy: string, now: Date): Promise<ImportSummary> {
   const text = input.ics ?? (await fetchCalendar(input.url!));
-  if (text.length > MAX_BYTES) throw new ApiError(413, "That calendar is too big (2 MB max).");
+  if (Buffer.byteLength(text, "utf8") > MAX_BYTES) throw new ApiError(413, "That calendar is too big (2 MB max).");
   if (!/BEGIN:VCALENDAR/i.test(text)) throw new ApiError(400, "That doesn't look like a calendar (.ics) file. Look for “Subscribe”, “Export” or “iCal” on the events page.");
   const cal = parseIcs(text);
   const feed = input.url ? new URL(input.url.replace(/^webcals?:\/\//i, "https://")).toString() : `upload:${crypto.createHash("sha1").update(text).digest("hex").slice(0, 10)}`;

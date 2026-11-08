@@ -1,0 +1,87 @@
+.scene {
+  position: relative;
+  width: 100%;
+  max-width: 510px;
+  height: 720px;
+  margin-inline: auto;
+  isolation: isolate;
+}
+.sky {
+  position: absolute;
+  inset: 0 5px 17px;
+  overflow: hidden;
+  border-radius: 48px 48px 150px 48px;
+  background: radial-gradient(ellipse at 66% 48%, #6235ad 0%, #2a1950 40%, #151125 76%);
+  box-shadow: inset 0 1px 0 #ffffff20, 0 32px 70px -40px #4c1d9566;
+  z-index: -1;
+}
+.sky::after {
+  content: "";
+  position: absolute;
+  inset: auto -25% -145px;
+  height: 290px;
+  border-top: 1px solid #d9baff90;
+  border-radius: 50%;
+  background: #2b185a;
+  box-shadow: 0 -16px 70px #ab7cff50;
+}
+.orbits { position: absolute; inset: 0; width: 100%; height: 100%; stroke: #ddd6fe25; stroke-width: 1; }
+.sceneHeading { position: absolute; inset: 24px 25px auto; display: flex; align-items: center; gap: 7px; color: #e9ddff; font-size: 11px; letter-spacing: .025em; }
+.sceneDot { width: 5px; height: 5px; background: #c4b5fd; border-radius: 50%; box-shadow: 0 0 11px #c4b5fd; }
+.phone { position: absolute; inset: 65px 0 auto; }
+.phone > div { transform: scale(.93); transform-origin: top center; }
+.ideaCard, .matchCard { position: absolute; z-index: 2; border: 1px solid #ede9fe; border-radius: 19px; background: #fff; box-shadow: 0 14px 32px -16px #170a4260; }
+.ideaCard { top: 155px; left: -25px; display: flex; align-items: flex-start; gap: 10px; padding: 15px 18px 15px 14px; transform: rotate(-4deg); }
+.cardIcon { display: grid; place-items: center; width: 32px; height: 32px; flex-shrink: 0; border-radius: 11px; color: #7c3aed; background: #f5f3ff; }
+.eyebrow { display: block; margin-bottom: 5px; color: #786a90; font-size: 10px; }
+.ideaCard p { margin: 0; color: #26183c; font-size: 14px; font-weight: 600; line-height: 1.35; }
+.matchCard { right: -20px; bottom: 126px; width: 214px; padding: 13px; }
+.matchTitle { display: flex; align-items: center; gap: 6px; color: #6d28d9; font-size: 10px; font-weight: 600; }
+.matchTitle svg:last-child { margin-left: auto; color: #059669; }
+.matchPerson { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.matchPerson img { border-radius: 50%; object-fit: cover; }
+.matchPerson strong { display: block; color: #251a39; font-size: 12px; }
+.matchPerson span { display: block; color: #786a90; font-size: 10px; }
+.matchPerson > svg { margin-left: auto; color: #7c3aed; }
+.sceneCaption { position: absolute; bottom: 33px; left: 0; right: 0; color: #d3bff0; font-size: 10px; text-align: center; }
+.trail { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; padding: 28px 0 40px; }
+.trailTrack { position: absolute; left: 18px; right: 18px; height: 1px; top: 46px; background: #e8e1f4; }
+.trailTrack > div { height: 100%; background: #8b5cf6; transform-origin: left; }
+.trailStep { display: flex; align-items: center; gap: 13px; position: relative; }
+.trailIcon { display: grid; place-items: center; flex-shrink: 0; width: 38px; height: 38px; border: 1px solid #ddd6fe; border-radius: 50%; background: #fff; box-shadow: 0 0 0 9px white; color: #7c3aed; }
+.trailStep > div { padding-right: 12px; background: white; }
+.trailStep h3 { font-size: 13px; font-weight: 650; color: #282039; }
+.trailStep p { margin-top: 2px; color: #786f88; font-size: 11px; }
+.scrollCue { display: inline-flex; align-items: center; gap: 8px; margin-top: 30px; color: #746887; font-size: 12px; }
+.scrollCue svg { transition: transform .2s; }
+.scrollCue:hover { color: #6d28d9; }
+.scrollCue:hover svg { transform: translateY(3px); }
+.scrollCue:focus-visible { outline: 2px solid #8b5cf6; outline-offset: 5px; border-radius: 4px; }
+.feature { min-width: 0; }
+@media (max-width: 1023px) {
+  .scene { max-width: 490px; margin-top: 8px; }
+  .ideaCard { left: 0; }
+  .matchCard { right: 0; }
+}
+@media (max-width: 639px) {
+  .scene { height: 688px; }
+  .sky { inset: 0 0 14px; border-radius: 32px 32px 95px 32px; }
+  .sceneHeading { inset: 22px 18px auto; font-size: 10px; }
+  .phone { top: 59px; }
+  .ideaCard { left: -8px; top: 153px; gap: 7px; padding: 11px; border-radius: 15px; }
+  .ideaCard p { font-size: 12px; }
+  .cardIcon { width: 27px; height: 27px; border-radius: 9px; }
+  .eyebrow { font-size: 9px; }
+  .matchCard { right: -5px; bottom: 101px; width: 185px; border-radius: 15px; }
+  .sceneCaption { bottom: 27px; }
+  .trail { gap: 16px; padding: 9px 0 32px; }
+  .trailTrack { top: 27px; }
+  .trailStep { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .trailStep > div { padding-right: 0; }
+  .trailStep h3 { font-size: 12px; }
+  .trailStep p { font-size: 10px; line-height: 1.5; max-width: 100px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scrollCue svg { transition: none; }
+  .scrollCue:hover svg { transform: none; }
+}

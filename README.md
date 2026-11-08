@@ -22,8 +22,8 @@ Safety is built into the backend (`liveMap()` in `services.ts`, covered by `test
 | Protection | How |
 |---|---|
 | No GPS, ever | Pins are zone anchors. Your own position (the "locate me" button) never leaves your device. |
-| Can't be triangulated | Each pin is offset up to ±28 m, differently for every viewer. |
-| Can't be tracked over time | Offsets reshuffle every 15 minutes. |
+| Viewer-specific offsets | Each zone-anchor pin is offset up to ±28 m, differently for every viewer; it is not a measurement of someone's location. |
+| Rotating offsets | Offsets reshuffle every 15 minutes. This reduces stable marker positions; it is not a general anonymity guarantee. |
 | Small groups stay anonymous | Zones with fewer than 3 visible people show as a faceless crowd bubble (k-anonymity). |
 | You choose your audience | Everyone at the event, or only people you'd be a good match for. |
 | Instant invisibility | Ghost mode removes you from the map and event lists immediately. |
@@ -64,7 +64,7 @@ npm run build      # production build
 Optional `.env.local` (see `.env.example`):
 
 - `ANTHROPIC_API_KEY`: turns on Claude for goal understanding and intro drafting. Without a key, the deterministic rules engine runs and the UI says which one ran.
-- `SESSION_SECRET`: required in production (signs the session cookie).
+- `SESSION_SECRET`: required in production, at least 16 characters (use a long random secret). Production sign-in fails closed without it. Versioned session cookies expire on the server after 30 days; older unversioned cookies require a new login.
 - `DEMO_MODE=off`: hides persona switching.
 
 ## How it works
@@ -129,7 +129,7 @@ f(T) = Σ_r w_r · max_{p∈T∪owner} cov(p,r) / Σ w_r      weighted role cove
 - Accounts use email + scrypt-hashed passwords and a signed session cookie. Production should add email verification / OAuth behind the same `currentUser()` boundary.
 - Calendar import resolves DNS before fetching, but a DNS-rebinding attacker could still race the check; production should pin the resolved IP.
 - The JSON store persists on one machine. On Vercel it lives in `/tmp` and resets on cold starts, so use `supabase/schema.sql` for a real deployment.
-- "Live" updates come from polling every 3–5 seconds, not websockets.
+- Chat, team rooms, and alerts use a shared server-sent-event connection per tab. Topic access is checked on the server and rechecked during the stream; short stream lifetimes force authenticated reconnects. Changes trigger fresh authorized snapshots rather than sending private message bodies through the event bus. Periodic fetches remain as a fallback. The bus is in-process: multiple Node replicas need a shared broker before claiming cross-replica realtime delivery.
 - Location check-in is self-attested by the client: a determined user could fake it. It's a convenience signal, not a security boundary.
 - Seeded people are fictional. CrownHacks facts come from the public event page, and the zone layout is illustrative.
 

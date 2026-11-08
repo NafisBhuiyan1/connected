@@ -1,12 +1,13 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { Check, MapPinned, Sparkles, Zap } from "lucide-react";
 
 const face = (id: string) => `/avatars/${id}.jpg`;
 
 /** Phone mockup of the Nearby map: light purple streets, event towers, face bubbles popping in. */
 export function PhoneMock() {
+  const reduce = useReducedMotion();
   const pins = [
     { id: "u_maya", x: "22%", y: "30%", s: 97 },
     { id: "u_alex", x: "62%", y: "24%", s: 92 },
@@ -34,10 +35,10 @@ export function PhoneMock() {
           <div className="absolute inset-x-3 top-3 flex items-center gap-2 rounded-2xl bg-white/90 px-3 py-2 text-[11px] shadow-sm">
             <span className="size-1.5 rounded-full bg-emerald-500" />
             <b className="text-ink">CrownHacks 2026</b>
-            <span className="ml-auto text-muted">31 here</span>
+            <span className="ml-auto text-muted">Demo map</span>
           </div>
           {/* event tower */}
-          <motion.div className="absolute" style={{ left: "42%", top: "62%" }} animate={{ y: [0, -4, 0] }} transition={{ duration: 2.4, repeat: Infinity }}>
+          <motion.div className="absolute" style={{ left: "42%", top: "62%" }} initial={false} animate={{ y: reduce ? 0 : [0, -4, 0] }} transition={reduce ? { duration: 0 } : { duration: 2.4, repeat: 2 }}>
             <div className="flex size-11 rotate-45 items-center justify-center rounded-xl border-2 border-white bg-emerald-500 shadow-lg">
               <Zap className="size-5 -rotate-45 text-white" />
             </div>
@@ -48,22 +49,24 @@ export function PhoneMock() {
               key={p.id}
               className="absolute"
               style={{ left: p.x, top: p.y }}
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
+              initial={reduce ? false : { scale: 0.85, opacity: 0 }}
+              whileInView={{ scale: 1, opacity: 1 }}
+              viewport={{ once: true }}
               transition={{ delay: 0.4 + i * 0.18, type: "spring", stiffness: 260, damping: 14 }}
             >
               <div className={`relative rounded-full p-[3px] shadow-lg ${p.s >= 80 ? "bg-brand-600" : "bg-white"}`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={face(p.id)} alt="" className="size-11 rounded-full object-cover" />
-                <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full border border-brand-100 bg-white px-1.5 text-[9px] font-bold text-brand-700">{p.s}</span>
+                <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full border border-brand-100 bg-white px-1.5 text-[8px] font-semibold text-brand-700">{p.s >= 80 ? "Shared goals" : "Nearby"}</span>
               </div>
             </motion.div>
           ))}
           {/* bottom card */}
           <motion.div
             className="absolute inset-x-3 bottom-3 rounded-3xl bg-white p-3 shadow-[0_16px_40px_-16px_rgba(76,29,149,0.5)]"
-            initial={{ y: 40, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
+            initial={reduce ? false : { y: 20, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
             transition={{ delay: 1.4, type: "spring" }}
           >
             <div className="flex items-center gap-2.5">
@@ -73,7 +76,7 @@ export function PhoneMock() {
                 <p className="text-[13px] font-semibold text-ink">Maya Chen</p>
                 <p className="truncate text-[11px] text-muted">Product designer · near the mixer</p>
               </div>
-              <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-bold text-brand-700">97%</span>
+              <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-700">Design</span>
             </div>
             <div className="mt-2.5 flex gap-2">
               <span className="flex h-8 flex-1 items-center justify-center rounded-xl bg-canvas text-[11.5px] font-medium text-ink-2">Profile</span>
@@ -88,20 +91,21 @@ export function PhoneMock() {
 
 /** Mini team-builder result card. */
 export function TeamMock() {
+  const reduce = useReducedMotion();
   const rows = [
-    { id: "u_alex", name: "Alex", role: "Backend", c: 100 },
-    { id: "u_maya", name: "Maya", role: "Design", c: 99 },
-    { id: "u_jordan", name: "Jordan", role: "Frontend", c: 100 },
+    { id: "u_alex", name: "Alex", role: "Backend" },
+    { id: "u_maya", name: "Maya", role: "Design" },
+    { id: "u_jordan", name: "Jordan", role: "Frontend" },
   ];
   return (
     <div className="rounded-3xl border border-line bg-white p-4 shadow-[0_20px_40px_-24px_rgba(76,29,149,0.45)]">
       <div className="flex items-center justify-between">
-        <p className="text-[12px] font-semibold text-brand-700">Best team · exact search</p>
-        <p className="text-[20px] font-bold text-ink">99%</p>
+        <p className="text-[12px] font-semibold text-brand-700">Illustrated team</p>
+        <p className="text-[11px] font-medium text-muted">Complementary skills</p>
       </div>
       <div className="mt-3 space-y-2.5">
         {rows.map((r, i) => (
-          <motion.div key={r.id} initial={{ opacity: 0, x: -10 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.12 }} className="flex items-center gap-2.5">
+          <motion.div key={r.id} initial={reduce ? false : { opacity: 0, x: -10 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.12 }} className="flex items-center gap-2.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={face(r.id)} alt="" className="size-8 rounded-full object-cover" />
             <div className="flex-1">
@@ -109,9 +113,7 @@ export function TeamMock() {
                 <b className="text-ink">{r.name}</b>
                 <span className="text-muted">{r.role}</span>
               </div>
-              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-brand-50">
-                <motion.div className="h-full rounded-full bg-brand-600" initial={{ width: 0 }} whileInView={{ width: `${r.c}%` }} viewport={{ once: true }} transition={{ delay: 0.2 + i * 0.12, duration: 0.7 }} />
-              </div>
+              <p className="mt-0.5 text-[10px] text-brand-600">A role your idea needs</p>
             </div>
             <Check className="size-4 text-emerald-500" />
           </motion.div>
@@ -132,7 +134,7 @@ export function MatchMock() {
           <p className="text-[14px] font-semibold text-ink">Priya Raman</p>
           <p className="text-[11.5px] text-muted">LLM apps & agents</p>
         </div>
-        <span className="flex size-11 items-center justify-center rounded-full border-4 border-brand-500 text-[12px] font-bold text-ink">88</span>
+        <span className="flex size-11 items-center justify-center rounded-full border border-brand-200 bg-brand-50 text-[10px] font-semibold text-brand-700">AI/ML</span>
       </div>
       <ul className="mt-3 space-y-1.5 text-[12px] text-ink-2">
         <li className="flex gap-1.5">

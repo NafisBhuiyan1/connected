@@ -1,5 +1,6 @@
 import "server-only";
 import { EventEmitter } from "node:events";
+import { AsyncLocalStorage } from "node:async_hooks";
 
 // In-process pub/sub for realtime updates over server-sent events.
 // Topics carry no content — just "something changed here" — so clients refetch through the normal,
@@ -30,8 +31,16 @@ export function publish(...topics: string[]) {
 }
 
 export function subscribe(topic: string, fn: (topic: string) => void): () => void {
-  bus.on(topic, fn);
-  return () => bus.off(topic, fn);
+  // A publisher's request has a different cookie context from the subscriber.
+  // Preserve the receiving request when later checking its session in callbacks.
+  const runInSubscriberContext = AsyncLocalStorage.snapshot();
+  const listener = (changed: string) => {
+    runInSubscriberContext(() => {
+      try { fn(changed); } catch { /* One disconnected consumer must not stop others. */ }
+    });
+  };
+  bus.on(topic, listener);
+  return () => { bus.off(topic, listener); };
 }
 
 export function listenerCount(topic: string): number {

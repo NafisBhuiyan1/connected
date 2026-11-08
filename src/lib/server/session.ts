@@ -1,39 +1,27 @@
 import "server-only";
-import crypto from "node:crypto";
 import { cookies } from "next/headers";
 import { getDb } from "./store";
+import { ApiError } from "./services";
+import { createSessionToken, verifySessionToken, sessionSecret, SESSION_MAX_AGE } from "./session-codec";
 import type { Profile } from "../types";
 
-// Signed-cookie identity. Demo-grade on purpose (no passwords to leak); production would use
-// Supabase Auth / OAuth with the same `currentUser()` boundary.
+// Signed, expiring cookies. Existing unversioned demo cookies require a new login.
 
 const COOKIE = "cx_session";
 const ORIGINAL = "cx_original"; // remembers your real account while acting as a demo persona
 
-function secret(): string {
-  const s = process.env.SESSION_SECRET;
-  if (s && s.length >= 16) return s;
-  if (process.env.NODE_ENV === "production" && !process.env.CONNECTED_ALLOW_DEV_SECRET) {
-    console.warn("[connected] SESSION_SECRET is not set — using an insecure development secret.");
-  }
-  return "connected-dev-secret-change-me-please";
+export function assertSessionConfigured() {
+  if (!sessionSecret(process.env)) throw new ApiError(503, "Sign-in is not configured. Set SESSION_SECRET on the server.");
 }
 
 function sign(value: string): string {
-  const mac = crypto.createHmac("sha256", secret()).update(value).digest("base64url");
-  return `${value}.${mac}`;
+  const key = sessionSecret(process.env);
+  if (!key) throw new ApiError(503, "Sign-in is not configured. Set SESSION_SECRET on the server.");
+  return createSessionToken(value, key);
 }
 
 function verify(token: string | undefined): string | null {
-  if (!token) return null;
-  const idx = token.lastIndexOf(".");
-  if (idx <= 0) return null;
-  const value = token.slice(0, idx);
-  const expected = sign(value);
-  const a = Buffer.from(expected);
-  const b = Buffer.from(token);
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
-  return value;
+  return verifySessionToken(token, sessionSecret(process.env));
 }
 
 const cookieOpts = {
@@ -41,7 +29,7 @@ const cookieOpts = {
   sameSite: "lax" as const,
   secure: process.env.NODE_ENV === "production",
   path: "/",
-  maxAge: 60 * 60 * 24 * 30,
+  maxAge: SESSION_MAX_AGE,
 };
 
 export async function currentUserId(): Promise<string | null> {

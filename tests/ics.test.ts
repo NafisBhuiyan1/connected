@@ -123,4 +123,34 @@ describe("iCalendar import", () => {
     expect(c.events[0].hosts).toBe("Niner Startup Club");
     expect(c.events[0].geo).toEqual({ lat: 35.3075, lng: -80.7357 });
   });
+
+  it("rejects impossible calendar dates instead of rolling them into a different day", () => {
+    const c = parseIcs("BEGIN:VCALENDAR\nBEGIN:VEVENT\nDTSTART:20260230T180000Z\nSUMMARY:Invalid date\nEND:VEVENT\nEND:VCALENDAR");
+    expect(c.events).toHaveLength(0);
+  });
+
+  it("preserves local weekly wall time across daylight-saving changes", () => {
+    const c = parseIcs("BEGIN:VCALENDAR\nBEGIN:VEVENT\nUID:weekly\nDTSTART;TZID=America/New_York:20261025T180000\nDURATION:PT1H\nRRULE:FREQ=WEEKLY\nSUMMARY:Weekly workshop\nEND:VEVENT\nEND:VCALENDAR");
+    const next = nextOccurrence(c.events[0], new Date("2026-10-30T12:00:00Z"))!;
+    expect(next.start.toISOString()).toBe("2026-11-01T23:00:00.000Z");
+  });
+
+  it("honors recurrence exceptions, COUNT, and exclusive event end boundaries", () => {
+    const c = parseIcs("BEGIN:VCALENDAR\nBEGIN:VEVENT\nUID:daily\nDTSTART:20261101T180000Z\nDURATION:PT1H\nRRULE:FREQ=DAILY;COUNT=3\nEXDATE:20261102T180000Z\nSUMMARY:Daily workshop\nEND:VEVENT\nEND:VCALENDAR");
+    expect(nextOccurrence(c.events[0], new Date("2026-11-01T19:00:00Z"))!.start.toISOString()).toBe("2026-11-03T18:00:00.000Z");
+    expect(nextOccurrence(c.events[0], new Date("2026-11-03T19:00:00Z"))).toBeNull();
+  });
+
+  it("skips nonexistent monthly dates and refuses to invent unsupported recurrence schedules", () => {
+    const c = parseIcs("BEGIN:VCALENDAR\nBEGIN:VEVENT\nDTSTART:20260131T180000Z\nDURATION:PT1H\nRRULE:FREQ=MONTHLY;COUNT=2\nSUMMARY:Monthly workshop\nEND:VEVENT\nEND:VCALENDAR");
+    expect(nextOccurrence(c.events[0], new Date("2026-02-01T12:00:00Z"))!.start.toISOString()).toBe("2026-03-31T18:00:00.000Z");
+    expect(nextOccurrence({ ...c.events[0], rrule: "FREQ=WEEKLY;BYDAY=MO,WE" }, new Date("2026-02-01T12:00:00Z"))).toBeNull();
+  });
+
+  it("does not tag unknown arts or humanities events as startup/developer events", () => {
+    expect(tagEvent("Poetry workshop", "A literature discussion", "workshop")).toEqual([]);
+    expect(tagEvent("History colloquium", "", "seminar")).toEqual([]);
+    expect(relevance({ title: "History seminar", description: "Literature discussion", categories: [] })).toBeGreaterThanOrEqual(2);
+    expect(relevance({ title: "Nursing research panel", description: "Clinical research", categories: ["Health & Wellness"] })).toBeGreaterThanOrEqual(2);
+  });
 });
