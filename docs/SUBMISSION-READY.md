@@ -2,6 +2,10 @@
 
 Prepared November 8, 2026. **The Devpost draft has not been submitted by Codex.**
 
+**Upload-ready backup video:** [connected-walkthrough.mp4](media/connected-walkthrough.mp4), approximately **1:48**. It uses captured app screens and synthetic narration, clearly identifies fictional profiles and the rules fallback, and passed a full video/audio decode check. Upload it to YouTube or Vimeo, then paste that platform's URL into Devpost. [Devpost supports YouTube, Vimeo, and Youku links](https://help.devpost.com/article/85-uploading-a-demo-video); a local file or raw GitHub MP4 URL does not complete that field.
+
+**Thumbnail and gallery:** [thumbnail](media/submission-thumbnail.png), [mobile home](media/submission-mobile-home.jpg), [mobile map](media/submission-mobile-map.jpg), [team result](media/submission-desktop-team.jpg), [desktop map](media/submission-desktop-map.jpg), [real events](media/submission-real-events.jpg).
+
 ## Required final actions
 
 1. Add every real team member in Manage team. CrownHacks requires **2–4 members**. Do not list AI assistants as teammates.

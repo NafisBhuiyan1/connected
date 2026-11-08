@@ -217,7 +217,7 @@ function events(now: Date): ConnectedEvent[] {
       host: "CAIR · UNC Charlotte",
       kind: "hackathon",
       description:
-        "UNC Charlotte's 24-hour, free-for-all hackathon. Teams of 2–4 compete across tracks (Cybersecurity/Blockchain, Bioinformatics, Most Technical, Most Creative). Roughly half of attendees are first-timers — and many arrive without a team.",
+        "UNC Charlotte's free, 24-hour hackathon. Teams of 2–4 compete across tracks (Cybersecurity/Blockchain, Bioinformatics, Most Technical, Most Creative). First-time hackers are welcome.",
       start: crownLive ? crownStart.toISOString() : at(-1, 11),
       end: crownLive ? crownEnd.toISOString() : at(1, 13),
       venue: "UNC Charlotte · McEniry Hall",

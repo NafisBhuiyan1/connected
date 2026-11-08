@@ -30,6 +30,7 @@
    - Never commit `.env.local` or the `.data/` folder.
 
 The final Devpost story, demo script, requirements, and presenter recovery steps are in [the submission packet](docs/SUBMISSION-READY.md).
+An [upload-ready 1:48 narrated screen walkthrough](docs/media/connected-walkthrough.mp4) and thumbnail/gallery images are included. The video uses actual app captures and synthetic narration; it is not a continuous screen recording.
 
 ## Try it
 
