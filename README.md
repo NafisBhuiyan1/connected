@@ -9,6 +9,12 @@
 - On a phone, use **Me → Install the app** to add it to your home screen.
 - Hosted free on Vercel with no database. Demo data resets whenever the server restarts, but the demo account and the real UNC Charlotte events reload automatically.
 
+## The Connected. app (`mobile-app/`, served at `/app`)
+
+- **`mobile-app/`** is the team's Expo phone app, from [kartik215/connected](https://github.com/kartik215/connected).
+- **The front page's buttons** open its web build at `/app` (in `public/app`). On a computer it has a top-bar layout and a 3D MapLibre map. [mobile-app/WEB-BUILD.md](mobile-app/WEB-BUILD.md) lists the changes and how to rebuild it.
+- **The earlier desktop app** is still at `/home`, `/login` and its other pages.
+
 ## Download and run (for teammates)
 
 1. **Get the code:**

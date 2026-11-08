@@ -6,3 +6,5 @@
 node_modules
 .vercel
 tsconfig.tsbuildinfo
+# Source of the Connected. mobile app; the site only serves its web build from public/app.
+mobile-app

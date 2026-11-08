@@ -1,0 +1,23 @@
+{
+  "name": "connected-assistant-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Keeps the Anthropic API key off the phone and forwards Connected assistant chats to Claude.",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "5.9"
+  }
+}
